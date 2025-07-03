@@ -5,6 +5,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const cartCountElement = document.getElementById('cart-count');
   const currentYearElement = document.getElementById('current-year');
 
+  // --- BEGIN IMPROVEMENT: API Base URL as a variable ---
+  // You can change this single line to switch between environments.
+  // For local development, use: 'http://localhost:5000'
+  // For Vercel/Render deployed version, use your Render API URL: 'https://YOUR_RENDER_API_URL.onrender.com'
+  const API_BASE_URL = 'https://gutterpunk-api.onrender.com'; // <--- CHANGE THIS WHEN NEEDED
+
+  // --- END IMPROVEMENT ---
   // Set current year in footer
   if (currentYearElement) {
     currentYearElement.textContent = new Date().getFullYear();
@@ -14,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     // Note: The frontend is now looking for a /api/books/featured endpoint
     // Make sure your server is running and configured correctly, e.g., on http://localhost:5000
-    const res = await fetch('http://localhost:5000/api/books/featured');
+    const res = await fetch(`${API_BASE_URL}/api/books/featured`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const books = await res.json();
 
@@ -58,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Fetch Coffee of the Week ---
   try {
     // Note: This endpoint needs to be created on your server
-    const res = await fetch('http://localhost:5000/api/cafe/coffee-of-week');
+    const res = await fetch(`${API_BASE_URL}/api/cafe/coffee-of-week`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const coffee = await res.json();
     if (coffee && coffee.name) {
@@ -74,7 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Fetch Daily Specials ---
   try {
     // Note: This endpoint needs to be created on your server
-    const res = await fetch('http://localhost:5000/api/cafe/daily-specials');
+    const res = await fetch(`${API_BASE_URL}/api/cafe/daily-specials`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const specials = await res.json();
     if (specials.length > 0) {
