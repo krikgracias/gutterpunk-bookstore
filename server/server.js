@@ -11,6 +11,7 @@ const booksRoute = require('./routes/books');
 const orderRoute = require('./routes/order');
 const adminRoute = require('./routes/admin');
 const squareWebhook = require('./controllers/squareWebhook');
+const cafeRoute = require('./routes/cafe');
 
 // Placeholder for future routes (you'll need to create these files)
 // const cartRoute = require('./routes/cart');
