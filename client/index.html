@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -63,4 +64,71 @@
 
   <script src="js/main.js"></script>
 </body>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GutterPunk Books & Co.</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <header>
+    <h1><a href="/" style="color:white; text-decoration: none;">GutterPunk Books & Co.</a></h1>
+    <nav>
+      <a href="/shop">Shop</a>
+      <a href="/categories">Categories</a>
+      <a href="/events">Events</a>
+      <a href="/blog">Blog</a>
+      <a href="/contact">Contact</a>
+      <a href="/sell-trade">Sell/Trade Books</a>
+      <a href="/cart" class="cart-icon"><i class="fas fa-shopping-cart"></i> (<span id="cart-count">0</span>)</a>
+      <a href="/account">Account</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h2>Rage Against the Mainstream: Read Banned Books</h2>
+      <p>Explore underground zines, banned literature, and titles they don’t want you to read.</p>
+      <div class="hero-actions">
+        <button onclick="window.location.href='/shop'">Shop Now</button>
+        <button onclick="window.location.href='/new-arrivals'">New Arrivals</button>
+      </div>
+    </section>
+
+    <section class="featured-sections">
+        <div class="section-card">
+            <h3>Coffee of the Week</h3>
+            <p id="coffee-of-week">Loading...</p>
+            <button onclick="window.location.href='/cafe'">View Cafe Menu</button>
+        </div>
+        <div class="section-card">
+            <h3>Today's Specials</h3>
+            <ul id="daily-specials-list">
+                <li>Loading...</li>
+            </ul>
+            <button onclick="window.location.href='/cafe'">Order Online</button>
+        </div>
+        <div class="section-card">
+            <h3>Staff Picks</h3>
+            <p>Discover our team's favorite subversive reads.</p>
+            <button onclick="window.location.href='/staff-picks'">Browse Picks</button>
+        </div>
+    </section>
+
+    <section class="books" id="book-container">
+      <h2>Banned & Underground Titles</h2>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; <span id="current-year"></span> GutterPunk Books & Co. | Long Live the Underground</p>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+>>>>>>> 2df1c2dee2f9cf22350da6bcb1f3c8273a3b2c4e
 </html>
