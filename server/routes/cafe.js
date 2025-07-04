@@ -1,26 +1,17 @@
 // server/routes/cafe.js
 const express = require('express');
 const router = express.Router();
-// Assuming you will create a model for CafeSettings or similar
-// const CafeSettings = require('../models/CafeSettings');
+const CafeSetting = require('../models/CafeSetting'); // Import the new model
 const { protect, adminOnly } = require('../middleware/auth');
 
 // GET /api/cafe/coffee-of-week
 router.get('/coffee-of-week', async (req, res) => {
   try {
-    // For now, return hardcoded data. Later, fetch from DB.
-    const coffeeOfWeek = {
-      name: "Rebel Roast Espresso",
-      description: "A dark, bold blend with notes of defiance and a hint of rebellion.",
-      price: 3.50,
-      imageUrl: "https://via.placeholder.com/150x150?text=Rebel+Roast"
-    };
-    // Or, if fetching from a model:
-    // const coffeeOfWeek = await CafeSettings.findOne({ type: 'coffeeOfWeek' });
-    if (coffeeOfWeek) {
-      res.json(coffeeOfWeek);
+    const coffeeOfWeek = await CafeSetting.findOne({ key: 'coffeeOfWeek' });
+    if (coffeeOfWeek && coffeeOfWeek.value) { // Check if found and value exists
+      res.json(coffeeOfWeek.value); // Return the 'value' field
     } else {
-      res.status(404).json({ message: 'No coffee of the week set.' });
+      res.status(404).json({ message: 'Coffee of the week not set.' });
     }
   } catch (err) {
     console.error('Error fetching coffee of the week:', err);
@@ -31,15 +22,9 @@ router.get('/coffee-of-week', async (req, res) => {
 // GET /api/cafe/daily-specials
 router.get('/daily-specials', async (req, res) => {
   try {
-    // For now, return hardcoded data. Later, fetch from DB.
-    const dailySpecials = [
-      { name: "Anarchist Avocado Toast", price: 7.99 },
-      { name: "Revolutionary Red Lentil Soup", price: 6.50 }
-    ];
-    // Or, if fetching from a model:
-    // const dailySpecials = await CafeSettings.findOne({ type: 'dailySpecials' });
-    if (dailySpecials.length > 0) {
-      res.json(dailySpecials);
+    const dailySpecials = await CafeSetting.findOne({ key: 'dailySpecials' });
+    if (dailySpecials && dailySpecials.value) { // Check if found and value exists
+      res.json(dailySpecials.value); // Return the 'value' field
     } else {
       res.status(404).json({ message: 'No daily specials set.' });
     }
@@ -49,16 +34,42 @@ router.get('/daily-specials', async (req, res) => {
   }
 });
 
-// Admin route to SET/UPDATE coffee of the week (optional for now, but good for future)
+// Admin Route: PUT /api/cafe/coffee-of-week (Set/Update Coffee of the Week)
 router.put('/coffee-of-week', protect, adminOnly, async (req, res) => {
-    // Implement logic to save req.body to your CafeSettings model for coffeeOfWeek
-    res.status(200).json({ message: 'Coffee of the week updated (mock).' });
+  const { name, description, price, imageUrl } = req.body; // Expect these fields for coffee
+  if (!name || !description || !price) {
+    return res.status(400).json({ message: 'Name, description, and price are required for coffee of the week.' });
+  }
+  try {
+    const updatedCoffee = await CafeSetting.findOneAndUpdate(
+      { key: 'coffeeOfWeek' },
+      { value: { name, description, price, imageUrl } },
+      { new: true, upsert: true, runValidators: true } // upsert: true creates if not exists
+    );
+    res.json(updatedCoffee.value);
+  } catch (err) {
+    console.error('Error updating coffee of the week:', err);
+    res.status(500).json({ message: 'Server error updating coffee of the week.' });
+  }
 });
 
-// Admin route to SET/UPDATE daily specials (optional for now, but good for future)
+// Admin Route: PUT /api/cafe/daily-specials (Set/Update Daily Specials)
 router.put('/daily-specials', protect, adminOnly, async (req, res) => {
-    // Implement logic to save req.body to your CafeSettings model for dailySpecials
-    res.status(200).json({ message: 'Daily specials updated (mock).' });
+  const specials = req.body; // Expect an array of objects: [{ name, price }]
+  if (!Array.isArray(specials) || !specials.every(s => s.name && typeof s.price === 'number')) {
+    return res.status(400).json({ message: 'Daily specials must be an array of objects with name and price.' });
+  }
+  try {
+    const updatedSpecials = await CafeSetting.findOneAndUpdate(
+      { key: 'dailySpecials' },
+      { value: specials },
+      { new: true, upsert: true, runValidators: true }
+    );
+    res.json(updatedSpecials.value);
+  } catch (err) {
+    console.error('Error updating daily specials:', err);
+    res.status(500).json({ message: 'Server error updating daily specials.' });
+  }
 });
 
 module.exports = router;
