@@ -35,6 +35,7 @@ app.use('/api/books', booksRoute);
 app.use('/api/orders', orderRoute);
 app.use('/api/admin', adminRoute);
 app.post('/api/webhooks/square', squareWebhook);
+app.use('/api/cafe', cafeRoute);
 
 // Future routes to add (uncomment and require them when ready):
 // app.use('/api/cart', cartRoute);
