@@ -147,31 +147,55 @@ document.addEventListener('DOMContentLoaded', async () => {
             <h3>${book.title}</h3>
             <p>${book.author_name ? book.author_name.join(', ') : 'Unknown Author'}</p>
             <p>First Publish Year: ${book.first_publish_year || 'N/A'}</p>
-            <p id="isbn-${olid ? olid.replace(/\//g, '-') : 'no-olid-' + Math.random().toString(36).substring(7)}" class="isbn-display">ISBN(s): Loading...</p> <button class="add-to-inventory-btn" data-book-key="${olid}" data-book-title="${encodeURIComponent(book.title)}">Add to Inventory (Admin)</button>
-          `;
+            <p id="isbn-${olid ? olid.replace(/\//g, '-') : 'no-olid-' + Math.random().toString(36).substring(7)}" class="isbn-display">ISBN(s): Loading...</p>
+            <button class="add-to-inventory-btn"
+                    data-book-key="${olid}"
+                    data-book-title="${encodeURIComponent(book.title)}"
+                    data-book-author="${encodeURIComponent(book.author_name ? book.author_name.join(', ') : '')}"
+                    data-book-publish-year="${book.first_publish_year || ''}"
+                    data-book-cover="${coverUrl}"
+                    data-book-isbn-initial="${book.isbn && book.isbn.length > 0 ? book.isbn[0] : ''}"
+                    >Add to Inventory (Admin)</button> `;
           fragment.appendChild(card); // Add card to fragment
 
           let isbnDisplay = `ISBN(s): N/A`;
+          let fetchedIsbns = []; // Store fetched ISBNs from detail call
+
           if (olid) {
             try {
               // Fetch from YOUR backend proxy's new detail endpoint
               const detailsRes = await fetch(`${API_BASE_URL}/api/openlibrary/details${olid}`);
               if (detailsRes.ok) {
                 const details = await detailsRes.json();
-                let allIsbns = [];
-                if (details.isbn_13) allIsbns = allIsbns.concat(details.isbn_13);
-                if (details.isbn_10) allIsbns = allIsbns.concat(details.isbn_10);
-                // Also pull ISBNs from the initial search result if available
-                if (book.isbn && Array.isArray(book.isbn)) allIsbns = allIsbns.concat(book.isbn);
+                fetchedIsbns = details.isbns || []; // Get ISBNs from backend's detail response
 
-                // Filter out duplicates and invalid entries (null, undefined, empty strings)
+                let allIsbns = [...fetchedIsbns];
+                if (book.isbn && Array.isArray(book.isbn)) allIsbns = allIsbns.concat(book.isbn);
                 const uniqueIsbns = [...new Set(allIsbns)].filter(Boolean);
+
+                // Check for _debugLog in details for further insights if needed
+                if (details._debugLog && details._debugLog.length > 0) {
+                   console.log(`Debug log for ${olid}:`, details._debugLog);
+                }
 
                 isbnDisplay = uniqueIsbns.length > 0 ? `ISBN(s): ${uniqueIsbns.join(', ')}` : `ISBN(s): N/A`;
 
+                // Update data attributes on button with fetched ISBNs
+                const buttonElement = card.querySelector('.add-to-inventory-btn');
+                if (buttonElement && uniqueIsbns.length > 0) {
+                    buttonElement.dataset.bookIsbn = uniqueIsbns[0]; // Store the first found ISBN for inventory
+                    buttonElement.dataset.bookAllIsbns = uniqueIsbns.join(','); // Store all for potential use
+                }
+
               } else {
+                // If API responded but not OK (e.g. 404 from our backend's logic)
+                const errorDetails = await detailsRes.json(); // Try to parse error response
                 isbnDisplay = `ISBN(s): Failed to load details.`;
-                console.warn(`Failed to fetch details for ${olid}: HTTP status ${detailsRes.status}`);
+                console.warn(`Failed to fetch details for ${olid}: HTTP status ${detailsRes.status}`, errorDetails);
+                // Log the backend's debug log if present in error response
+                if (errorDetails && errorDetails._debugLog && errorDetails._debugLog.length > 0) {
+                  console.warn(`Backend debug log for ${olid}:`, errorDetails._debugLog);
+                }
               }
             } catch (detailErr) {
               console.error(`Error fetching details for ${olid}:`, detailErr);
@@ -179,6 +203,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
           } else if (book.isbn && book.isbn.length > 0) { // Fallback: Use initial search ISBN if no OLID
             isbnDisplay = `ISBN(s): ${book.isbn.join(', ')}`;
+            const buttonElement = card.querySelector('.add-to-inventory-btn');
+            if (buttonElement) {
+                buttonElement.dataset.bookIsbn = book.isbn[0];
+                buttonElement.dataset.bookAllIsbns = book.isbn.join(',');
+            }
           }
 
           // Update the ISBN field on the card after the detail fetch
@@ -192,6 +221,68 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Wait for all detail fetches to complete (or fail)
         await Promise.all(detailPromises);
         searchResultsContainer.appendChild(fragment); // Append all cards to the DOM
+
+        // NEW: Add event listeners to all "Add to Inventory" buttons after they are added to DOM
+        document.querySelectorAll('.add-to-inventory-btn').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                // For now, assume admin token is in localStorage for testing
+                const token = localStorage.getItem('adminToken'); // Assuming you'll store token here
+                if (!token) {
+                    alert('You must be logged in as an admin to add books to inventory.');
+                    return;
+                }
+
+                // Retrieve data from button's data-attributes
+                const bookData = {
+                    title: decodeURIComponent(e.target.dataset.bookTitle),
+                    author: decodeURIComponent(e.target.dataset.bookAuthor),
+                    isbn: e.target.dataset.bookIsbn || e.target.dataset.bookIsbnInitial || null, // Use best available ISBN
+                    coverImage: e.target.dataset.bookCover,
+                    // publicationDate: Open Library's search year often isn't a full date, so we construct one
+                    publicationDate: e.target.dataset.bookPublishYear ? `${e.target.dataset.bookPublishYear}-01-01` : null, // Approx date
+                    // Add default/placeholder values for required fields in your Book model
+                    price: 0.00, // Placeholder price
+                    stock: 0,    // Placeholder stock
+                    description: "No description available from Open Library search. Please edit in admin panel.", // Placeholder description
+                    isUsed: false, // Default to new
+                    format: "Paperback", // Default format
+                    publisher: "Unknown", // Placeholder publisher
+                    language: "English" // Placeholder language
+                };
+
+                // Basic validation for essential fields needed by your backend Book model
+                if (!bookData.title || !bookData.author || !bookData.isbn) {
+                    alert('Cannot add book: Missing essential information (Title, Author, or ISBN). Please try a different search or add manually.');
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/books`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(bookData)
+                    });
+
+                    if (res.ok) {
+                        alert('Book added to inventory successfully! Remember to update details (price, stock, description) via your admin panel.');
+                        // Optionally, disable button or change text
+                        e.target.textContent = 'Added!';
+                        e.target.disabled = true;
+                    } else {
+                        const errorResponse = await res.json();
+                        alert(`Failed to add book: ${errorResponse.message || 'Server error.'}`);
+                        console.error('Add to inventory error:', errorResponse);
+                    }
+                } catch (err) {
+                    console.error('Network error when adding book:', err);
+                    alert('Network error: Could not add book to inventory. Please check your connection.');
+                }
+            });
+        });
+
       } else {
         searchResultsContainer.innerHTML = '<h2>Search Results from Open Library</h2><p>No results found. Try a different search term.</p>';
       }
