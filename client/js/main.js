@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const searchInput = document.getElementById('searchInput'); // NEW
   const searchButton = document.getElementById('searchButton'); // NEW
   const searchResultsContainer = document.getElementById('searchResults');
+  const searchForm = document.getElementById('searchForm');
 
   // --- BEGIN IMPROVEMENT: API Base URL as a variable ---
   // You can change this single line to switch between environments.
@@ -103,7 +104,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- Search Functionality ---
-  searchButton.addEventListener('click', async () => {
+  // searchButton.addEventListener('click', async () => {
+     searchForm.addEventListener('submit', async (event) => {
+      event.preventDefault(); 
+      
     const query = searchInput.value.trim();
     if (query.length === 0) {
       searchResultsContainer.innerHTML = '<p>Please enter a search term.</p>';
