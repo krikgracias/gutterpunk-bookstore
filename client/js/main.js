@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // searchButton.addEventListener('click', async () => {
      searchForm.addEventListener('submit', async (event) => {
       event.preventDefault(); 
-      
+
     const query = searchInput.value.trim();
     if (query.length === 0) {
       searchResultsContainer.innerHTML = '<p>Please enter a search term.</p>';
@@ -140,8 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <h3>${book.title}</h3>
             <p>${book.author_name ? book.author_name.join(', ') : 'Unknown Author'}</p>
             <p>First Publish Year: ${book.first_publish_year || 'N/A'}</p>
-            <p>ISBN: ${book.isbn ? book.isbn[0] : 'N/A'}</p>
-            <button class="add-to-cart-btn" data-book-id="${book.key}">Add to Inventory (Admin)</button>
+            <p>ISBN(s): ${book.isbn && book.isbn.length > 0 ? book.isbn.join(', ') : 'N/A'}</p> <button class="add-to-inventory-btn" data-book-key="${book.key}" data-book-title="${encodeURIComponent(book.title)}">Add to Inventory (Admin)</button>
           `;
           searchResultsContainer.appendChild(card);
         });
