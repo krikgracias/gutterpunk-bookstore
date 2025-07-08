@@ -178,6 +178,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                    console.log(`Debug log for ${olid}:`, details._debugLog);
                 }
 
+
                 isbnDisplay = uniqueIsbns.length > 0 ? `ISBN(s): ${uniqueIsbns.join(', ')}` : `ISBN(s): N/A`;
 
                 // Update data attributes on button with fetched ISBNs
@@ -226,9 +227,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('.add-to-inventory-btn').forEach(button => {
             button.addEventListener('click', async (e) => {
                 // For now, assume admin token is in localStorage for testing
-                const token = localStorage.getItem('adminToken'); // Assuming you'll store token here
-                if (!token) {
-                    alert('You must be logged in as an admin to add books to inventory.');
+                const token = localStorage.getItem('userToken'); // Correctly check for userToken
+                const isAdminUser = localStorage.getItem('isAdmin') === 'true'; // Get isAdmin status as boolean
+                
+                if (!token || !isAdminUser) {
+                    alert('You must be logged in as an administrator to add books to inventory.');
+                    window.location.href = '/login.html'; // Redirect to login page
                     return;
                 }
 
