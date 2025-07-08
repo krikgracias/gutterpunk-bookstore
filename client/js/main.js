@@ -99,6 +99,54 @@ document.addEventListener('DOMContentLoaded', async () => {
     dailySpecialsList.innerHTML = '<li>Failed to load daily specials.</li>';
   }
 
+  // --- Search Functionality ---
+  searchButton.addEventListener('click', async () => {
+    const query = searchInput.value.trim();
+    if (query.length === 0) {
+      searchResultsContainer.innerHTML = '<p>Please enter a search term.</p>';
+      return;
+    }
+
+    searchResultsContainer.innerHTML = '<h2>Searching Open Library...</h2>'; // Clear previous results
+
+    try {
+      // Send request to your backend's Open Library proxy endpoint
+      const res = await fetch(`${API_BASE_URL}/api/openlibrary/search?q=${encodeURIComponent(query)}`);
+      if (!res.ok) {
+        if (res.status === 404) {
+          searchResultsContainer.innerHTML = '<h2>Search Results from Open Library</h2><p>No results found. Try a different search term.</p>';
+          return;
+        }
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      const data = await res.json();
+
+      if (data && data.docs && data.docs.length > 0) {
+        searchResultsContainer.innerHTML = '<h2>Search Results from Open Library</h2>';
+        data.docs.forEach(book => {
+          const card = document.createElement('div');
+          card.className = 'book-card';
+          const coverUrl = book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : 'https://via.placeholder.com/200x300/f0f0f0/888?text=No+Cover';
+
+          card.innerHTML = `
+            <img src="${coverUrl}" alt="${book.title}">
+            <h3>${book.title}</h3>
+            <p>${book.author_name ? book.author_name.join(', ') : 'Unknown Author'}</p>
+            <p>First Publish Year: ${book.first_publish_year || 'N/A'}</p>
+            <p>ISBN: ${book.isbn ? book.isbn[0] : 'N/A'}</p>
+            <button class="add-to-cart-btn" data-book-id="${book.key}">Add to Inventory (Admin)</button>
+          `;
+          searchResultsContainer.appendChild(card);
+        });
+      } else {
+        searchResultsContainer.innerHTML = '<h2>Search Results from Open Library</h2><p>No results found. Try a different search term.</p>';
+      }
+
+    } catch (err) {
+      console.error('Failed to search Open Library:', err);
+      searchResultsContainer.innerHTML = '<h2>Search Results from Open Library</h2><p>Failed to perform search. Please try again later.</p>';
+    }
+  });
   // --- Update Cart Count Function (mock for now) ---
   function updateCartCount(change) {
     let currentCount = parseInt(cartCountElement.textContent);

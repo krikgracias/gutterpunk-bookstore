@@ -516,3 +516,55 @@ footer {
         width: 80%;
     }
 }
+
+/* Add to your style.css */
+.search-section {
+  padding: 3em 2em;
+  text-align: center;
+  background: #fdfdfd;
+  border-bottom: 1px solid #eee;
+}
+
+.search-box {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+#searchInput {
+  padding: 10px 15px;
+  width: 60%;
+  max-width: 500px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1em;
+}
+
+#searchButton {
+  padding: 10px 20px;
+  background: #555; /* Darker button */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+#searchButton:hover {
+  background: #777;
+}
+
+#searchResults {
+  /* Re-use .books styling, or add specific for search results */
+  min-height: 200px; /* Ensure space for results */
+}
+
+#searchResults h2 { /* Style for heading inside search results */
+  width: 100%;
+  text-align: center;
+  margin-bottom: 1em;
+  font-size: 1.8em;
+  color: #333;
+}

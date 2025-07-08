@@ -12,6 +12,7 @@ const orderRoute = require('./routes/order');
 const adminRoute = require('./routes/admin');
 const squareWebhook = require('./controllers/squareWebhook');
 const cafeRoute = require('./routes/cafe');
+const openLibraryRoute = require('./routes/openLibrary');
 
 // Placeholder for future routes (you'll need to create these files)
 // const cartRoute = require('./routes/cart');
@@ -36,6 +37,7 @@ app.use('/api/orders', orderRoute);
 app.use('/api/admin', adminRoute);
 app.post('/api/webhooks/square', squareWebhook);
 app.use('/api/cafe', cafeRoute);
+app.use('/api/openlibrary', openLibraryRoute)
 
 // Future routes to add (uncomment and require them when ready):
 // app.use('/api/cart', cartRoute);
