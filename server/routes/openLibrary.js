@@ -26,16 +26,17 @@ function extractIsbns(detailData) {
         // if (identifiers.amazon) { isbns = isbns.concat(identifiers.amazon); }
     }
     // Also include top-level ISBNs from search results if they exist (though less common for comprehensive data)
-    if (detailData.isbn_13 && !identifiers) { // Add !identifiers to prevent double counting if present in both
+    // These conditions ensure we only add if 'identifiers' object wasn't processed (to avoid duplicates/errors)
+    if (detailData.isbn_13 && !identifiers) {
         isbns = isbns.concat(detailData.isbn_13);
     }
-    if (detailData.isbn_10 && !identifiers) { // Add !identifiers
+    if (detailData.isbn_10 && !identifiers) {
         isbns = isbns.concat(detailData.isbn_10);
     }
-    if (detailData.lccn && !identifiers) { // Add !identifiers
+    if (detailData.lccn && !identifiers) {
         isbns = isbns.concat(detailData.lccn);
     }
-    if (detailData.oclc_id && !identifiers) { // Add !identifiers (original name from docs)
+    if (detailData.oclc_id && !identifiers) { // Keep this for compatibility if 'oclc_id' is sometimes at top level
         isbns = isbns.concat(detailData.oclc_id);
     }
 
@@ -53,7 +54,7 @@ router.get('/search', async (req, res) => {
   try {
     // Request editions details directly in the initial search using the 'fields' parameter
     // We request general fields, plus specific edition fields
-    const fields = 'key,title,author_name,first_publish_year,cover_i,isbn,editions.key,editions.title,editions.isbn,editions.publishers,editions.publish_date,editions.number_of_pages,editions.physical_format,editions.languages,editions.description,editions.lccn,editions.oclc'; // Request more edition fields
+    const fields = 'key,title,author_name,first_publish_year,cover_i,isbn,editions.key,editions.title,editions.isbn,editions.publishers,editions.publish_date,editions.number_of_pages,editions.physical_format,editions.languages,editions.description,editions.lccn,editions.oclc,subjects'; // Added 'subjects' and more detail
     const openLibraryApiUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&fields=${fields}&limit=50`; // Increased limit for more results
     const response = await axios.get(openLibraryApiUrl, { timeout: 10000 }); // Increased timeout for larger response
 
@@ -81,10 +82,10 @@ router.get('/search', async (req, res) => {
 
         // Construct a unified book object for the frontend, prioritizing edition data
         return {
-          key: doc.key, // Original work/edition key
+          key: doc.key, // Original work/edition key (e.g., /works/OL...W)
           title: bestEditionData?.title || doc.title,
           author_name: bestEditionData?.author_name || doc.author_name, // Author name can be top level or in edition
-          first_publish_year: bestEditionData?.publish_date?.substring(0,4) || doc.first_publish_year, // Prefer edition publish date
+          first_publish_year: bestEditionData?.publish_date?.substring(0,4) || doc.first_publish_year, // Prefer edition publish date (year only)
           cover_i: bestEditionData?.cover_i || doc.cover_i, // Cover ID from edition or work
           isbns: combinedIsbns, // The combined and unique ISBNs found
 
@@ -116,5 +117,6 @@ router.get('/search', async (req, res) => {
 
 // REMOVED ROUTE: GET /api/openlibrary/book-details/:olid
 // This route is no longer needed as /search will provide details directly.
+// You must ensure this route is deleted or commented out if it still exists.
 
 module.exports = router;
