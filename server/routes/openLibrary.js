@@ -77,7 +77,7 @@ router.get('/search', async (req, res) => {
 
 // NEW/RESTORED ROUTE: GET /api/openlibrary/book-details/:olid
 // This route will now perform the multi-strategy fetch for comprehensive details
-router.get('/book-details/:olid', async (req, res) => {
+router.get('/olid-details/:olid', async (req, res) => {
   const { olid } = req.params;
   if (!olid) {
     return res.status(400).json({ message: 'Open Library ID (olid) is required.' });

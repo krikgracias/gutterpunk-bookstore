@@ -11,17 +11,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   const coffeeOfWeekElement = document.getElementById('coffee-of-week');
   const dailySpecialsList = document.getElementById('daily-specials-list');
 
-  // Elements specific to search-results.html (or book-detail.html)
+  // Elements specific to search-results.html
   const searchResultsContainer = document.getElementById('searchResultsContainer'); // ID on search-results.html
   const searchResultsHeading = document.getElementById('searchResultsHeading');
   const searchQueryDisplay = document.getElementById('searchQueryDisplay');
-  // For book-detail.html (new elements)
+
+  // For book-detail.html (new elements, ensure IDs match book-detail.html)
   const bookDetailContainer = document.getElementById('bookDetailContainer');
   const bookDetailTitle = document.getElementById('bookDetailTitle');
   const bookDetailCover = document.getElementById('bookDetailCover');
   const bookDetailAuthor = document.getElementById('bookDetailAuthor');
   const bookDetailPublishYear = document.getElementById('bookDetailPublishYear');
-  const bookDetailISBNs = document.getElementById('bookDetailISBNs');
+  const bookDetailISBNs = document.getElementById('bookDetailISBNs'); // For all ISBN lines
   const bookDetailPublisher = document.getElementById('bookDetailPublisher');
   const bookDetailPages = document.getElementById('bookDetailPages');
   const bookDetailFormat = document.getElementById('bookDetailFormat');
@@ -70,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
       // First call: General search to your backend's Open Library proxy endpoint
-      // THIS FETCH NOW GETS ALL EDITION DETAILS DIRECTLY FROM BACKEND
+      // THIS FETCH NOW GETS ALL EDITION DETAILS DIRECTLY FROM BACKEND (if backend updated)
       const res = await fetch(`${API_BASE_URL}/api/openlibrary/search?q=${encodeURIComponent(query)}`);
       if (!res.ok) {
         if (searchResultsContainer) {
@@ -85,15 +86,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       const data = await res.json(); // data.docs will now be the processed docs from backend
 
       if (data && data.docs && data.docs.length > 0) {
-        if (searchResultsContainer) searchResultsContainer.innerHTML = '<h2>Search Results from Open Library</h2>';
+        if (searchResultsContainer) searchResultsContainer.innerHTML = ''; // Clear loading message
 
         const fragment = document.createDocumentFragment();
 
+        // No Promise.all for details needed here, as backend provides details directly
         data.docs.forEach(book => { // 'book' here is the processedDoc from your backend
           const card = document.createElement('div');
           card.className = 'book-card';
           const coverUrl = book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : 'https://via.placeholder.com/200x300/f0f0f0/888?text=No+Cover';
-          const olid = book.key;
+          const olid = book.key; // OLID of the work/edition
 
           // --- ISBN Selection and Display ---
           const allFoundIsbns = book.isbns || [];
@@ -106,18 +108,21 @@ document.addEventListener('DOMContentLoaded', async () => {
           const authorDisplay = book.author_name ? book.author_name.join(', ') : 'Unknown Author';
           const publisherDisplay = book.publishers && book.publishers.length > 0 ? book.publishers[0] : 'N/A';
           const pagesDisplay = book.number_of_pages || 'N/A';
-
+          const formatDisplay = book.physical_format || 'N/A';
+          const languageDisplay = book.languages && book.languages.length > 0 ? book.languages[0] : 'N/A'; // Show first language if multiple
 
           card.innerHTML = `
             <img src="${coverUrl}" alt="${book.title}" class="book-cover-clickable" data-olid="${olid}" />
             <h3>${book.title}</h3>
             <p>${authorDisplay}</p>
-            <p>Published: ${book.first_publish_year || 'N/A'}</p>
+            <p>First Publish Year: ${book.first_publish_year || 'N/A'}</p>
             <p class="isbn-general">ISBN: ${genericIsbn}</p>
             <p class="isbn13">ISBN-13: ${isbn13}</p>
             <p class="isbn10">ISBN-10: ${isbn10}</p>
             <p class="publisher">Publisher: ${publisherDisplay}</p>
             <p class="pages">Pages: ${pagesDisplay}</p>
+            <p class="format">Format: ${formatDisplay}</p>
+            <p class="language">Language: ${languageDisplay}</p>
             <button class="add-to-inventory-btn"
                     data-book-key="${olid}"
                     data-book-title="${encodeURIComponent(book.title)}"
@@ -127,8 +132,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     data-book-isbn="${primaryIsbn || ''}"
                     data-book-publisher="${encodeURIComponent(publisherDisplay)}"
                     data-book-pages="${pagesDisplay}"
-                    data-book-format="${encodeURIComponent(book.physical_format || '')}"
-                    data-book-language="${encodeURIComponent(book.languages && book.languages.length > 0 ? book.languages[0] : '')}"
+                    data-book-format="${encodeURIComponent(formatDisplay)}"
+                    data-book-language="${encodeURIComponent(languageDisplay)}"
                     data-book-description="${encodeURIComponent(book.description || '')}"
                     >Add to Inventory (Admin)</button>
           `;
@@ -137,7 +142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (searchResultsContainer) searchResultsContainer.appendChild(fragment);
 
-        // Add event listeners to "Add to Inventory" buttons (remains mostly same)
+        // Add event listeners to all "Add to Inventory" buttons after they are added to DOM
         document.querySelectorAll('.add-to-inventory-btn').forEach(button => {
             button.addEventListener('click', async (e) => {
                 const token = localStorage.getItem('userToken');
@@ -197,7 +202,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
 
-        // NEW: Add event listener for book cover clicks to navigate to detail page
+        // Add event listener for book cover clicks to navigate to detail page
         document.querySelectorAll('.book-cover-clickable').forEach(img => {
             img.addEventListener('click', (e) => {
                 const olid = e.target.dataset.olid;
@@ -223,11 +228,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Search Event Listener (redirects to search-results.html) ---
   if (searchForm) {
       searchForm.addEventListener('submit', async (event) => {
-          event.preventDefault();
+          event.preventDefault(); // Prevent page reload
           const query = searchInput.value.trim();
           if (query) {
               window.location.href = `/search-results.html?q=${encodeURIComponent(query)}`;
           } else {
+              // On index.html, just alert if no query
               alert('Please enter a search term.');
           }
       });
@@ -235,12 +241,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
   // --- Logic specific to search-results.html (runs ONLY on that page) ---
+  // This block initializes search on the results page based on URL params
   if (window.location.pathname === '/search-results.html' && searchResultsContainer) {
       const urlParams = new URLSearchParams(window.location.search);
       const query = urlParams.get('q');
-      if (searchInput) searchInput.value = query;
-      if (searchResultsHeading) searchResultsHeading.textContent = `Search Results for "${query || ''}"`;
-      await performSearch(query);
+      if (searchInput) searchInput.value = query; // Populate search input on results page
+      if (searchResultsHeading) searchResultsHeading.textContent = `Search Results for "${query || ''}"`; // Update heading
+      await performSearch(query); // Call performSearch with the query from URL
   }
 
 
@@ -255,7 +262,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       bookDetailContainer.innerHTML = '<p>Loading book details...</p>';
       try {
-          const res = await fetch(`${API_BASE_URL}/api/openlibrary/book-details${olid}`); // Note: Using /book-details
+          // Fetch from YOUR backend proxy's NEW detail endpoint
+          // Note: API_BASE_URL/api/openlibrary/olid-details${olid}
+          const res = await fetch(`${API_BASE_URL}/api/openlibrary/olid-details${olid}`); // <--- Corrected endpoint here
           if (!res.ok) {
               const errorResponse = await res.json();
               throw new Error(errorResponse.message || `HTTP error! status: ${res.status}`);
@@ -291,8 +300,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
           bookDetailContainer.innerHTML = ''; // Clear loading message
-          // You would append the dynamically created elements here or
-          // ensure the HTML structure of book-detail.html is updated for these IDs
+          // Append the dynamically created elements or ensure the HTML structure of book-detail.html is updated for these IDs
           // For now, we're just setting textContent to existing elements.
 
       } catch (err) {
