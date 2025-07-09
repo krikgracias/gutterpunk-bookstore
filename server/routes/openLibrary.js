@@ -47,7 +47,7 @@ router.get('/search', async (req, res) => {
 
 // UPDATED ROUTE: GET /api/openlibrary/details/:olid
 // This route will try multiple strategies to find ISBNs for a given OLID
-router.get('/details/:olid', async (req, res) => {
+router.get('/book-details/:olid', async (req, res) => {
   const { olid } = req.params;
   if (!olid) {
     return res.status(400).json({ message: 'Open Library ID (olid) is required.' });

@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
           if (olid) {
             try {
-              const detailsRes = await fetch(`${API_BASE_URL}/api/openlibrary/details${olid}`);
+              const detailsRes = await fetch(`${API_BASE_URL}/api/openlibrary/book-details${olid}`);
               if (detailsRes.ok) {
                 const details = await detailsRes.json();
                 fetchedIsbns = details.isbns || [];
