@@ -11,15 +11,19 @@
   <header>
     <h1><a href="/" style="color:white; text-decoration: none;">GutterPunk Books & Co.</a></h1>
     <nav>
-      <a href="/shop">Shop</a>
-      <a href="/categories">Categories</a>
+      <a href="/shop.html">Shop</a> <a href="/categories">Categories</a>
       <a href="/events">Events</a>
       <a href="/blog">Blog</a>
       <a href="/contact">Contact</a>
       <a href="/sell-trade">Sell/Trade Books</a>
       <a href="/cart" class="cart-icon"><i class="fas fa-shopping-cart"></i> (<span id="cart-count">0</span>)</a>
-      <a href="/login.html">Account</a>
-    </nav>
+      <a href="/login.html">Account</a> </nav>
+    <div class="header-search">
+      <form id="searchForm">
+        <input type="text" id="searchInput" placeholder="Search by title, author, or ISBN..." />
+        <button id="searchButton" type="submit">Search</button>
+      </form>
+    </div>
   </header>
 
   <main>
@@ -27,7 +31,7 @@
       <h2>Rage Against the Mainstream: Read Banned Books</h2>
       <p>Explore underground zines, banned literature, and titles they don’t want you to read.</p>
       <div class="hero-actions">
-        <button onclick="window.location.href='/shop'">Shop Now</button>
+        <button onclick="window.location.href='/shop.html'">Shop Now</button>
         <button onclick="window.location.href='/new-arrivals'">New Arrivals</button>
       </div>
     </section>
@@ -54,24 +58,7 @@
 
     <section class="books" id="book-container">
       <h2>Banned & Underground Titles</h2>
-    </section>
-    
-    <!-- <section class="search-section">
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search by title, author, or ISBN..." />
-    <button id="searchButton">Search Library</button>
-  </div>
-  <div id="searchResults" class="books">
-    </div>
-</section> -->
-
-<section class="search-section">
-  <div class="search-box">
-    <form id="searchForm"> <input type="text" id="searchInput" placeholder="Search by title, author, or ISBN..." />
-      <button id="searchButton" type="submit">Search Library</button> </form> </div>
-  <div id="searchResults" class="books">
-    </div>
-</section>
+      </section>
 
   </main>
 

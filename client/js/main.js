@@ -1,29 +1,30 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  // Elements that exist on both index.html and search-results.html (header/footer elements)
+  const currentYearElement = document.getElementById('current-year');
+  const searchInput = document.getElementById('searchInput');
+  const searchButton = document.getElementById('searchButton'); // The button in the header
+  const searchForm = document.getElementById('searchForm'); // The form in the header
+  const cartCountElement = document.getElementById('cart-count'); // Cart count in header
+
+  // Elements specific to index.html
   const bookContainer = document.getElementById('book-container');
   const coffeeOfWeekElement = document.getElementById('coffee-of-week');
   const dailySpecialsList = document.getElementById('daily-specials-list');
-  const cartCountElement = document.getElementById('cart-count');
-  const currentYearElement = document.getElementById('current-year');
-  const searchInput = document.getElementById('searchInput');
-  const searchButton = document.getElementById('searchButton');
-  const searchResultsContainer = document.getElementById('searchResults');
-  const searchForm = document.getElementById('searchForm'); // Ensure this ID is correct in index.html
 
-  // --- BEGIN IMPROVEMENT: API Base URL as a variable ---
-  // You can change this single line to switch between environments.
-  // For local development, use: 'http://localhost:5000'
-  // For Vercel/Render deployed version, use your Render API URL: 'https://gutterpunk-api.onrender.com'
-  const API_BASE_URL = 'https://gutterpunk-api.onrender.com'; // <--- CHANGE THIS WHEN NEEDED to your actual Render URL
+  // Elements specific to search-results.html
+  const searchResultsContainer = document.getElementById('searchResultsContainer'); // ID on search-results.html
+  const searchResultsHeading = document.getElementById('searchResultsHeading');
+  const searchQueryDisplay = document.getElementById('searchQueryDisplay');
 
-  // --- END IMPROVEMENT ---
+  // --- API Base URL ---
+  const API_BASE_URL = 'https://gutterpunk-api.onrender.com'; // Your Render API URL
 
-  // Set current year in footer
+  // Set current year in footer (runs on all pages including login/register)
   if (currentYearElement) {
     currentYearElement.textContent = new Date().getFullYear();
   }
 
-  // --- Helper function for fetching books, coffee, specials ---
-  // This helps centralize error logging for the main page loads
+  // --- Helper function for fetching common data (books, coffee, specials) ---
   async function fetchData(url, errorMsgElement, defaultContent) {
     try {
       const res = await fetch(url);
@@ -38,108 +39,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // --- Fetch Books (Local Inventory) ---
-  const booksData = await fetchData(`${API_BASE_URL}/api/books/featured`, bookContainer, `<p>Failed to load books. Please try again later.</p>`);
-  if (booksData) {
-    if (booksData.length === 0) {
-      bookContainer.innerHTML = `<p>No featured books available at the moment. Check back soon!</p>`;
-    } else {
-      bookContainer.innerHTML = '';
-      booksData.forEach(book => {
-        const card = document.createElement('div');
-        card.className = 'book-card';
-        card.innerHTML = `
-          <img src="${book.coverImage || 'https://via.placeholder.com/200x300/f0f0f0/888?text=No+Cover'}" alt="${book.title}">
-          <h3>${book.title}</h3>
-          <p>${book.author}</p>
-          <p>$${book.price.toFixed(2)}</p>
-          <button class="add-to-cart-btn" data-book-id="${book._id}">Add to Cart</button>
-        `;
-        bookContainer.appendChild(card);
-      });
-
-      document.querySelectorAll('.add-to-cart-btn').forEach(button => {
-        button.addEventListener('click', async (e) => {
-          const bookId = e.target.dataset.bookId;
-          // In a real app, you'd send this to your backend cart API, e.g.:
-          // await fetch(`${API_BASE_URL}/api/cart/add`, {
-          //   method: 'POST',
-          //   headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer YOUR_AUTH_TOKEN` },
-          //   body: JSON.stringify({ bookId, quantity: 1 })
-          // });
-          console.log(`Adding book ${bookId} to cart! (Mock Action)`);
-          updateCartCount(1); // Mock cart count update
-          alert('Book added to cart!');
-        });
-      });
-    }
-  }
-
-
-  // --- Fetch Coffee of the Week ---
-  const coffee = await fetchData(`${API_BASE_URL}/api/cafe/coffee-of-week`, coffeeOfWeekElement);
-  if (coffee) {
-    if (coffee.name) {
-      coffeeOfWeekElement.textContent = `${coffee.name} - ${coffee.description} ($${coffee.price.toFixed(2)})`;
-    } else {
-      coffeeOfWeekElement.textContent = 'No special coffee this week.';
-    }
-  } else {
-    coffeeOfWeekElement.textContent = 'Failed to load coffee special.';
-  }
-
-  // --- Fetch Daily Specials ---
-  const specials = await fetchData(`${API_BASE_URL}/api/cafe/daily-specials`, dailySpecialsList);
-  if (specials) {
-    if (specials.length > 0) {
-      dailySpecialsList.innerHTML = '';
-      specials.forEach(item => {
-        const li = document.createElement('li');
-        li.textContent = `${item.name} - $${item.price.toFixed(2)}`;
-        dailySpecialsList.appendChild(li);
-      });
-    } else {
-      dailySpecialsList.innerHTML = '<li>No daily specials today.</li>';
-    }
-  } else {
-    dailySpecialsList.innerHTML = '<li>Failed to load daily specials.</li>';
-  }
-
-
-  // --- Search Functionality ---
-  // Encapsulate search logic into a function
-  async function performSearch() {
-    const query = searchInput.value.trim();
-    if (query.length === 0) {
-      searchResultsContainer.innerHTML = '<h2>Search Results from Open Library</h2><p>Please enter a search term.</p>';
+  // --- Main Search Logic Function ---
+  // This function is now generalized to run on either page, but its display part only works on search-results.html
+  async function performSearch(query) {
+    if (!query || query.length === 0) {
+      if (searchResultsContainer) { // Only update if on the search results page
+        searchResultsContainer.innerHTML = '<h2>Search Results</h2><p>Please enter a search term.</p>';
+      }
       return;
     }
 
-    searchResultsContainer.innerHTML = '<h2>Searching Open Library...</h2><p>This might take a moment as we fetch details for each book.</p>'; // Updated loading message
+    if (searchResultsContainer) { // Only update if on the search results page
+      searchResultsContainer.innerHTML = '<h2>Searching Open Library...</h2><p>This might take a moment as we fetch details for each book.</p>';
+      if (searchQueryDisplay) searchQueryDisplay.textContent = `For: "${query}"`;
+    }
 
     try {
       // First call: General search to your backend's Open Library proxy endpoint
       const res = await fetch(`${API_BASE_URL}/api/openlibrary/search?q=${encodeURIComponent(query)}`);
       if (!res.ok) {
-        if (res.status === 404) {
-          searchResultsContainer.innerHTML = '<h2>Search Results from Open Library</h2><p>No results found. Try a different search term.</p>';
-          return;
+        if (searchResultsContainer) {
+          if (res.status === 404) {
+            searchResultsContainer.innerHTML = '<h2>Search Results from Open Library</h2><p>No results found. Try a different search term.</p>';
+          } else {
+            searchResultsContainer.innerHTML = `<h2>Search Results</h2><p>Failed to perform search. HTTP status: ${res.status}. Please try again later.</p>`;
+          }
         }
         throw new Error(`HTTP error! status: ${res.status}`);
       }
       const data = await res.json();
 
       if (data && data.docs && data.docs.length > 0) {
-        searchResultsContainer.innerHTML = '<h2>Search Results from Open Library</h2>';
-        const fragment = document.createDocumentFragment(); // Use a fragment for performance
+        if (searchResultsContainer) searchResultsContainer.innerHTML = ''; // Clear loading message
 
-        // Use Promise.all to fetch details for all books in parallel
-        // This is generally faster than sequential 'for...of' if you have many results
+        const fragment = document.createDocumentFragment();
+
         const detailPromises = data.docs.map(async (book) => {
           const card = document.createElement('div');
           card.className = 'book-card';
           const coverUrl = book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : 'https://via.placeholder.com/200x300/f0f0f0/888?text=No+Cover';
-          const olid = book.key; // Open Library ID (e.g., /works/OL12345W or /books/OL12345M)
+          const olid = book.key;
 
           // Initial card structure with loading ISBNs
           card.innerHTML = `
@@ -155,45 +94,40 @@ document.addEventListener('DOMContentLoaded', async () => {
                     data-book-publish-year="${book.first_publish_year || ''}"
                     data-book-cover="${coverUrl}"
                     data-book-isbn-initial="${book.isbn && book.isbn.length > 0 ? book.isbn[0] : ''}"
-                    >Add to Inventory (Admin)</button> `;
-          fragment.appendChild(card); // Add card to fragment
+                    >Add to Inventory (Admin)</button>
+          `;
+          fragment.appendChild(card);
 
           let isbnDisplay = `ISBN(s): N/A`;
-          let fetchedIsbns = []; // Store fetched ISBNs from detail call
+          let fetchedIsbns = [];
 
           if (olid) {
             try {
-              // Fetch from YOUR backend proxy's new detail endpoint
               const detailsRes = await fetch(`${API_BASE_URL}/api/openlibrary/details${olid}`);
               if (detailsRes.ok) {
                 const details = await detailsRes.json();
-                fetchedIsbns = details.isbns || []; // Get ISBNs from backend's detail response
+                fetchedIsbns = details.isbns || [];
 
                 let allIsbns = [...fetchedIsbns];
                 if (book.isbn && Array.isArray(book.isbn)) allIsbns = allIsbns.concat(book.isbn);
                 const uniqueIsbns = [...new Set(allIsbns)].filter(Boolean);
 
-                // Check for _debugLog in details for further insights if needed
                 if (details._debugLog && details._debugLog.length > 0) {
                    console.log(`Debug log for ${olid}:`, details._debugLog);
                 }
 
-
                 isbnDisplay = uniqueIsbns.length > 0 ? `ISBN(s): ${uniqueIsbns.join(', ')}` : `ISBN(s): N/A`;
 
-                // Update data attributes on button with fetched ISBNs
                 const buttonElement = card.querySelector('.add-to-inventory-btn');
                 if (buttonElement && uniqueIsbns.length > 0) {
-                    buttonElement.dataset.bookIsbn = uniqueIsbns[0]; // Store the first found ISBN for inventory
-                    buttonElement.dataset.bookAllIsbns = uniqueIsbns.join(','); // Store all for potential use
+                    buttonElement.dataset.bookIsbn = uniqueIsbns[0];
+                    buttonElement.dataset.bookAllIsbns = uniqueIsbns.join(',');
                 }
 
               } else {
-                // If API responded but not OK (e.g. 404 from our backend's logic)
-                const errorDetails = await detailsRes.json(); // Try to parse error response
+                const errorDetails = await detailsRes.json();
                 isbnDisplay = `ISBN(s): Failed to load details.`;
                 console.warn(`Failed to fetch details for ${olid}: HTTP status ${detailsRes.status}`, errorDetails);
-                // Log the backend's debug log if present in error response
                 if (errorDetails && errorDetails._debugLog && errorDetails._debugLog.length > 0) {
                   console.warn(`Backend debug log for ${olid}:`, errorDetails._debugLog);
                 }
@@ -202,7 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               console.error(`Error fetching details for ${olid}:`, detailErr);
               isbnDisplay = `ISBN(s): Error.`;
             }
-          } else if (book.isbn && book.isbn.length > 0) { // Fallback: Use initial search ISBN if no OLID
+          } else if (book.isbn && book.isbn.length > 0) {
             isbnDisplay = `ISBN(s): ${book.isbn.join(', ')}`;
             const buttonElement = card.querySelector('.add-to-inventory-btn');
             if (buttonElement) {
@@ -211,23 +145,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
           }
 
-          // Update the ISBN field on the card after the detail fetch
-          const currentIsbnElement = card.querySelector(`#isbn-${olid ? olid.replace(/\//g, '-') : 'no-olid-' + card.id}`); // Re-find using the ID
+          const currentIsbnElement = card.querySelector(`#isbn-${olid ? olid.replace(/\//g, '-') : 'no-olid-' + card.id}`);
           if (currentIsbnElement) {
               currentIsbnElement.textContent = isbnDisplay;
           }
-          return card; // Return the card for Promise.all
+          return card;
         });
 
-        // Wait for all detail fetches to complete (or fail)
         await Promise.all(detailPromises);
-        searchResultsContainer.appendChild(fragment); // Append all cards to the DOM
+        if (searchResultsContainer) searchResultsContainer.appendChild(fragment);
 
-        // NEW: Add event listeners to all "Add to Inventory" buttons after they are added to DOM
         document.querySelectorAll('.add-to-inventory-btn').forEach(button => {
             button.addEventListener('click', async (e) => {
-                // For now, assume admin token is in localStorage for testing
-                const token = localStorage.getItem('userToken'); // Correctly check for userToken
+                const token = localStorage.getItem('userToken');
                 const isAdminUser = localStorage.getItem('isAdmin') === 'true'; // Get isAdmin status as boolean
                 
                 if (!token || !isAdminUser) {
@@ -236,25 +166,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
-                // Retrieve data from button's data-attributes
                 const bookData = {
                     title: decodeURIComponent(e.target.dataset.bookTitle),
                     author: decodeURIComponent(e.target.dataset.bookAuthor),
-                    isbn: e.target.dataset.bookIsbn || e.target.dataset.bookIsbnInitial || null, // Use best available ISBN
+                    isbn: e.target.dataset.bookIsbn || e.target.dataset.bookIsbnInitial || null,
                     coverImage: e.target.dataset.bookCover,
-                    // publicationDate: Open Library's search year often isn't a full date, so we construct one
-                    publicationDate: e.target.dataset.bookPublishYear ? `${e.target.dataset.bookPublishYear}-01-01` : null, // Approx date
-                    // Add default/placeholder values for required fields in your Book model
-                    price: 0.00, // Placeholder price
-                    stock: 0,    // Placeholder stock
-                    description: "No description available from Open Library search. Please edit in admin panel.", // Placeholder description
-                    isUsed: false, // Default to new
-                    format: "Paperback", // Default format
-                    publisher: "Unknown", // Placeholder publisher
-                    language: "English" // Placeholder language
+                    publicationDate: e.target.dataset.bookPublishYear ? `${e.target.dataset.bookPublishYear}-01-01` : null,
+                    price: 0.00,
+                    stock: 0,
+                    description: "No description available from Open Library search. Please edit in admin panel.",
+                    isUsed: false,
+                    format: "Paperback",
+                    publisher: "Unknown",
+                    language: "English"
                 };
 
-                // Basic validation for essential fields needed by your backend Book model
                 if (!bookData.title || !bookData.author || !bookData.isbn) {
                     alert('Cannot add book: Missing essential information (Title, Author, or ISBN). Please try a different search or add manually.');
                     return;
@@ -272,7 +198,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     if (res.ok) {
                         alert('Book added to inventory successfully! Remember to update details (price, stock, description) via your admin panel.');
-                        // Optionally, disable button or change text
                         e.target.textContent = 'Added!';
                         e.target.disabled = true;
                     } else {
@@ -288,24 +213,108 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
       } else {
-        searchResultsContainer.innerHTML = '<h2>Search Results from Open Library</h2><p>No results found. Try a different search term.</p>';
+        if (searchResultsContainer) searchResultsContainer.innerHTML = '<h2>Search Results from Open Library</h2><p>No results found. Try a different search term.</p>';
       }
 
     } catch (err) {
       console.error('Failed to perform search:', err);
-      searchResultsContainer.innerHTML = '<h2>Search Results from Open Library</h2><p>Failed to perform search. Please try again later.</p>';
+      if (searchResultsContainer) searchResultsContainer.innerHTML = '<h2>Search Results from Open Library</h2><p>Failed to perform search. Please try again later.</p>';
     }
   }
 
-  // --- Search Event Listener (using form submit) ---
+  // --- Search Event Listener (now redirects to search-results.html) ---
   if (searchForm) {
       searchForm.addEventListener('submit', async (event) => {
           event.preventDefault(); // Prevent page reload
-          await performSearch(); // Call the encapsulated search function
+          const query = searchInput.value.trim();
+          if (query) {
+              // Redirect to search-results.html with the query as a URL parameter
+              window.location.href = `/search-results.html?q=${encodeURIComponent(query)}`;
+          } else {
+              // On index.html, just alert if no query
+              alert('Please enter a search term.');
+          }
       });
-  } else {
-      // Fallback if form not found (shouldn't happen if HTML is correct)
-      searchButton.addEventListener('click', performSearch);
+  }
+
+
+  // --- Logic specific to search-results.html (runs ONLY on that page) ---
+  // This block initializes search on the results page based on URL params
+  if (window.location.pathname === '/search-results.html' && searchResultsContainer) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const query = urlParams.get('q');
+      if (searchInput) searchInput.value = query; // Populate search input on results page
+      if (searchResultsHeading) searchResultsHeading.textContent = `Search Results for "${query || ''}"`; // Update heading
+      await performSearch(query); // Call performSearch with the query from URL
+  }
+
+
+  // --- Logic specific to index.html (runs ONLY on that page) ---
+  // These fetches only happen on the homepage to display featured content
+  if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
+      await Promise.all([
+          fetchData(`${API_BASE_URL}/api/books/featured`, bookContainer, `<p>Failed to load books. Please try again later.</p>`),
+          fetchData(`${API_BASE_URL}/api/cafe/coffee-of-week`, coffeeOfWeekElement),
+          fetchData(`${API_BASE_URL}/api/cafe/daily-specials`, dailySpecialsList)
+      ]).then(results => {
+          const [booksData, coffee, specials] = results;
+
+          // Process booksData
+          if (booksData) {
+              if (booksData.length === 0) {
+                  bookContainer.innerHTML = `<p>No featured books available at the moment. Check back soon!</p>`;
+              } else {
+                  bookContainer.innerHTML = '';
+                  booksData.forEach(book => {
+                      const card = document.createElement('div');
+                      card.className = 'book-card';
+                      card.innerHTML = `
+                        <img src="${book.coverImage || 'https://via.placeholder.com/200x300/f0f0f0/888?text=No+Cover'}" alt="${book.title}">
+                        <h3>${book.title}</h3>
+                        <p>${book.author}</p>
+                        <p>$${book.price.toFixed(2)}</p>
+                        <button class="add-to-cart-btn" data-book-id="${book._id}">Add to Cart</button>
+                      `;
+                      bookContainer.appendChild(card);
+                  });
+                  document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                      const bookId = e.target.dataset.bookId;
+                      console.log(`Adding book ${bookId} to cart! (Mock Action)`);
+                      updateCartCount(1);
+                      alert('Book added to cart!');
+                    });
+                  });
+              }
+          }
+
+          // Process coffee
+          if (coffee) {
+              if (coffee.name) {
+                  coffeeOfWeekElement.textContent = `${coffee.name} - ${coffee.description} ($${coffee.price.toFixed(2)})`;
+              } else {
+                  coffeeOfWeekElement.textContent = 'No special coffee this week.';
+              }
+          } else {
+              coffeeOfWeekElement.textContent = 'Failed to load coffee special.';
+          }
+
+          // Process specials
+          if (specials) {
+              if (specials.length > 0) {
+                  dailySpecialsList.innerHTML = '';
+                  specials.forEach(item => {
+                      const li = document.createElement('li');
+                      li.textContent = `${item.name} - $${item.price.toFixed(2)}`;
+                      dailySpecialsList.appendChild(li);
+                  });
+              } else {
+                  dailySpecialsList.innerHTML = '<li>No daily specials today.</li>';
+              }
+          } else {
+              dailySpecialsList.innerHTML = '<li>Failed to load daily specials.</li>';
+          }
+      });
   }
 
 

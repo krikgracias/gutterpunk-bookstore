@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Search Results - GutterPunk Books & Co.</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <header>
+    <h1><a href="/" style="color:white; text-decoration: none;">GutterPunk Books & Co.</a></h1>
+    <nav>
+      <a href="/shop.html">Shop</a>
+      <a href="/categories">Categories</a>
+      <a href="/events">Events</a>
+      <a href="/blog">Blog</a>
+      <a href="/contact">Contact</a>
+      <a href="/sell-trade">Sell/Trade Books</a>
+      <a href="/cart" class="cart-icon"><i class="fas fa-shopping-cart"></i> (<span id="cart-count">0</span>)</a>
+      <a href="/login.html">Account</a>
+    </nav>
+    <div class="header-search">
+      <form id="searchForm">
+        <input type="text" id="searchInput" placeholder="Search by title, author, or ISBN..." />
+        <button id="searchButton" type="submit">Search</button>
+      </form>
+    </div>
+  </header>
+
+  <main>
+    <section class="search-results-display">
+      <h2 id="searchResultsHeading">Search Results</h2>
+      <p id="searchQueryDisplay"></p>
+      <div id="searchResultsContainer" class="books">
+        <p>Loading search results...</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; <span id="current-year"></span> GutterPunk Books & Co. | Long Live the Underground</p>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
