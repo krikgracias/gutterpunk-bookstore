@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Book Details - GutterPunk Books & Co.</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* Specific styles for the book detail page */
+    .book-detail-main {
+      padding: 3em 2em;
+      background: #f9f9f9;
+      min-height: calc(100vh - 150px);
+    }
+    .book-detail-card {
+      background: #fff;
+      padding: 2em;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap; /* Allow wrapping of content */
+      gap: 2em;
+    }
+    .book-detail-cover-area {
+      flex: 0 0 250px; /* Fixed width for cover */
+      text-align: center;
+    }
+    .book-detail-cover-area img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .book-detail-info {
+      flex: 1; /* Take remaining space */
+      min-width: 300px; /* Ensure it doesn't get too small */
+    }
+    .book-detail-info h2 {
+      margin-top: 0;
+      font-size: 2.2em;
+      color: #222;
+      line-height: 1.2;
+    }
+    .book-detail-info h3 {
+      font-size: 1.5em;
+      color: #555;
+      margin-top: 0.5em;
+    }
+    .book-detail-info p {
+      margin-bottom: 0.5em;
+      color: #444;
+    }
+    .book-detail-info p strong {
+      color: #222;
+    }
+    .book-detail-description {
+      margin-top: 1.5em;
+      line-height: 1.8;
+      color: #333;
+    }
+    .book-detail-subjects {
+        margin-top: 1em;
+        font-size: 0.9em;
+        color: #777;
+    }
+    .add-to-inventory-detail-btn {
+      background: #f0c040;
+      color: #222;
+      border: none;
+      padding: 0.8em 2em;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1.1em;
+      margin-top: 1.5em;
+      transition: background 0.3s ease;
+    }
+    .add-to-inventory-detail-btn:hover {
+        background: #e0b030;
+    }
+
+    @media (max-width: 768px) {
+        .book-detail-card {
+            flex-direction: column;
+            align-items: center;
+        }
+        .book-detail-cover-area {
+            flex: 0 0 100%;
+        }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><a href="/" style="color:white; text-decoration: none;">GutterPunk Books & Co.</a></h1>
+    <nav>
+      <a href="/shop.html">Shop</a>
+      <a href="/categories">Categories</a>
+      <a href="/events">Events</a>
+      <a href="/blog">Blog</a>
+      <a href="/contact">Contact</a>
+      <a href="/sell-trade">Sell/Trade Books</a>
+      <a href="/cart" class="cart-icon"><i class="fas fa-shopping-cart"></i> (<span id="cart-count">0</span>)</a>
+      <a href="/login.html">Account</a>
+    </nav>
+    <div class="header-search">
+      <form id="searchForm">
+        <input type="text" id="searchInput" placeholder="Search by title, author, or ISBN..." />
+        <button id="searchButton" type="submit">Search</button>
+      </form>
+    </div>
+  </header>
+
+  <main>
+    <section class="book-detail-main">
+      <div id="bookDetailContainer" class="book-detail-card">
+        <div class="book-detail-cover-area">
+          <img id="bookDetailCover" src="https://via.placeholder.com/300x450?text=Loading..." alt="Loading Cover">
+        </div>
+        <div class="book-detail-info">
+          <h2 id="bookDetailTitle">Loading Title...</h2>
+          <h3 id="bookDetailAuthor">Loading Author...</h3>
+          <p id="bookDetailPublishYear">Published: Loading...</p>
+          <div id="bookDetailISBNs">
+            <p>ISBN: Loading...</p>
+            <p>ISBN-13: Loading...</p>
+            <p>ISBN-10: Loading...</p>
+          </div>
+          <p id="bookDetailPublisher">Publisher: Loading...</p>
+          <p id="bookDetailPages">Pages: Loading...</p>
+          <p id="bookDetailFormat">Format: Loading...</p>
+          <p id="bookDetailLanguage">Language: Loading...</p>
+          <div id="bookDetailDescription">Loading Description...</div>
+          <div id="bookDetailSubjects">Loading Subjects...</div>
+          <button id="addInventoryDetailBtn" class="add-to-inventory-detail-btn" style="display: none;">Add to Inventory (Admin)</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; <span id="current-year"></span> GutterPunk Books & Co. | Long Live the Underground</p>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

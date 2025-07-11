@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard - GutterPunk Books & Co.</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <header>
+    <h1><a href="/" style="color:white; text-decoration: none;">GutterPunk Books & Co.</a></h1>
+    <nav>
+      <a href="/shop.html">Shop</a>
+      <a href="/categories">Categories</a>
+      <a href="/events">Events</a>
+      <a href="/blog">Blog</a>
+      <a href="/contact">Contact</a>
+      <a href="/sell-trade">Sell/Trade Books</a>
+      <a href="/cart" class="cart-icon"><i class="fas fa-shopping-cart"></i> (<span id="cart-count">0</span>)</a>
+      <a href="/login.html">Account</a>
+    </nav>
+    <div class="header-search">
+      <form id="searchForm">
+        <input type="text" id="searchInput" placeholder="Search by title, author, or ISBN..." />
+        <button id="searchButton" type="submit">Search</button>
+      </form>
+    </div>
+  </header>
+
+  <main>
+    <section class="admin-dashboard-container">
+      <h2>Admin Dashboard</h2>
+      <div class="admin-content-area">
+        <p>Welcome to the admin dashboard! Here you can manage:</p>
+        <ul>
+            <li>Books (add, edit, delete)</li>
+            <li>Users</li>
+            <li>Orders</li>
+            <li>Cafe Specials</li>
+            <li>Trade-in Submissions</li>
+        </ul>
+        <p>Admin-specific tools and reports will go here.</p>
+        <p>Login status: <span id="adminStatus">Checking...</span></p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; <span id="current-year"></span> GutterPunk Books & Co. | Long Live the Underground</p>
+  </footer>
+
+  <script src="js/main.js"></script> <script src="js/auth.js"></script> <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const adminStatusElement = document.getElementById('adminStatus');
+        const isAdmin = localStorage.getItem('isAdmin') === 'true';
+        if (adminStatusElement) {
+            adminStatusElement.textContent = isAdmin ? 'Logged in as Admin' : 'Not logged in as Admin. Access Denied.';
+            if (!isAdmin) {
+                // Redirect non-admins if desired, or show limited content
+                alert('Access Denied. You must be an administrator to view this page.');
+                window.location.href = '/login.html'; // Redirect to login
+            }
+        }
+    });
+  </script>
+</body>
+</html>
