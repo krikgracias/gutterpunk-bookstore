@@ -18,7 +18,7 @@ function extractIsbns(detailData) {
         if (identifiers.lccn) {
             isbns = isbns.concat(identifiers.lccn);
         }
-        if (identifiers.oclc) { // Use 'oclc' as per docs, not 'oclc_id'
+        if (identifiers.oclc) { // Note: docs show 'oclc' for identifiers object
             isbns = isbns.concat(identifiers.oclc);
         }
         // Add goodreads, amazon, etc., from identifiers if you want them in the combined list
@@ -44,7 +44,7 @@ function extractIsbns(detailData) {
 }
 
 // UPDATED ROUTE: GET /api/openlibrary/search?q=<query>
-// This route now uses the 'fields' parameter to get edition details directly
+// This route now primarily provides basic search results. Full details will be fetched by /olid-details/:olid.
 router.get('/search', async (req, res) => {
   const { q } = req.query;
   if (!q) {
@@ -52,55 +52,24 @@ router.get('/search', async (req, res) => {
   }
 
   try {
-    // Request editions details directly in the initial search using the 'fields' parameter
-    // We request general fields, plus specific edition fields
-    const fields = 'key,title,author_name,first_publish_year,cover_i,isbn,editions.key,editions.title,editions.isbn,editions.publishers,editions.publish_date,editions.number_of_pages,editions.physical_format,editions.languages,editions.description,editions.lccn,editions.oclc,subjects'; // Ensure all these fields are requested
-    const openLibraryApiUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&fields=${fields}&limit=50`; // Increased limit for more results
-    const response = await axios.get(openLibraryApiUrl, { timeout: 10000 }); // Increased timeout for larger response
+    // We are simplifying this search to focus on core work/edition fields for initial display.
+    // Full details will come from the /olid-details/:olid endpoint.
+    const fields = 'key,title,author_name,first_publish_year,cover_i,isbn'; // Simplified fields for basic search display
+    const openLibraryApiUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&fields=${fields}&limit=50`;
+    const response = await axios.get(openLibraryApiUrl, { timeout: 8000 });
 
     if (response.data && response.data.docs) {
       const processedDocs = response.data.docs.map(doc => {
-        let bestEditionData = null;
-        let combinedIsbns = [];
-
-        // Try to find the best edition within the search result that has an ISBN
-        if (doc.editions && doc.editions.docs && doc.editions.docs.length > 0) {
-          for (const edition of doc.editions.docs) {
-            const editionIsbns = extractIsbns(edition); // Use updated helper for edition
-            if (editionIsbns.length > 0) {
-              bestEditionData = edition; // This is the edition we'll use for full details
-              combinedIsbns = editionIsbns;
-              break; // Found one with ISBNs, take the first relevant one
-            }
-          }
-        }
-
-        // Fallback to work-level ISBNs if no ISBNs found from editions (less common but good fallback)
-        if (combinedIsbns.length === 0 && doc.isbn) { // doc.isbn comes from the work-level doc
-            combinedIsbns = [...new Set(combinedIsbns.concat(doc.isbn))].filter(Boolean);
-        }
-
-        // Construct a unified book object for the frontend, prioritizing bestEditionData
         return {
-          key: doc.key, // Original work/edition key (e.g., /works/OL...W)
-          title: bestEditionData?.title || doc.title,
-          author_name: bestEditionData?.author_name || doc.author_name, // Author name can be top level or in edition
-          first_publish_year: bestEditionData?.publish_date?.substring(0,4) || doc.first_publish_year, // Prefer edition publish date (year only)
-          cover_i: bestEditionData?.cover_i || doc.cover_i, // Cover ID from edition or work
-          isbns: combinedIsbns, // The combined and unique ISBNs found
-
-          // NEW: Edition-level details, prioritized from bestEditionData
-          publishers: bestEditionData?.publishers?.map(p => p.name) || [],
-          number_of_pages: bestEditionData?.number_of_pages || null,
-          physical_format: bestEditionData?.physical_format || null,
-          languages: bestEditionData?.languages?.map(l => l.key.split('/').pop()) || [], // Extract language codes
-          publish_places: bestEditionData?.publish_places?.map(p => p.name) || [],
-          description: bestEditionData?.description?.value || bestEditionData?.description || doc.description?.value || doc.description || null, // Description can be object or string
-          subjects: bestEditionData?.subjects?.map(s => s.name) || doc.subjects?.map(s => s.name) || [], // Subjects from edition or work
+          key: doc.key, // Work/Edition Key (needed for detail lookup)
+          title: doc.title,
+          author_name: doc.author_name,
+          first_publish_year: doc.first_publish_year,
+          cover_i: doc.cover_i,
+          isbns: extractIsbns(doc) // Extract ISBNs if any directly present on search result doc
         };
       });
-
-      res.json({ docs: processedDocs, numFound: response.data.numFound }); // Send processed docs
+      res.json({ docs: processedDocs, numFound: response.data.numFound });
     } else {
       res.status(404).json({ message: 'No results found from Open Library.' });
     }
@@ -127,24 +96,26 @@ router.get('/olid-details/:olid', async (req, res) => {
   let debugLog = [];
 
   try {
-    // Strategy 1: Direct fetch by OLID (could be Work or Edition)
+    // Strategy 1: Direct fetch by OLID (could be a Work or an Edition)
     debugLog.push(`Strategy 1: Attempting direct fetch for ${olid}.`);
-    console.log(`[OL-DETAIL] Starting direct fetch for ${olid}`);
+    console.log(`[OL-DETAIL] Starting direct fetch for ${olid}`); // Log to Render console
     try {
       const directDetailsUrl = `https://openlibrary.org${olid}.json`;
       const directResponse = await axios.get(directDetailsUrl, { timeout: 10000 }); // Increased timeout
       comprehensiveBookData = directResponse.data; // Store initial data
       finalIsbns = extractIsbns(comprehensiveBookData); // Extract ISBNs from initial fetch
 
-      if (finalIsbns.length > 0 && comprehensiveBookData.type?.key === '/type/edition') { // Check if it's an edition
-          // If we found ISBNs directly AND it's an Edition, this is likely our best data
+      if (finalIsbns.length > 0 && comprehensiveBookData.type?.key === '/type/edition') {
+          // If we found ISBNs directly AND it's an Edition, this is likely our best data. Early exit is fine.
           debugLog.push(`Strategy 1: Found ISBNs directly in an Edition.`);
           console.log(`[OL-DETAIL] Direct fetch successful for ${olid}, found ISBNs in Edition.`);
       } else if (finalIsbns.length > 0 && comprehensiveBookData.type?.key === '/type/work') {
           // Found ISBNs in a Work directly, which is unusual but possible for some data.
-          debugLog.push(`Strategy 1: Found ISBNs directly in a Work (uncommon).`);
+          // We'll proceed to Strategy 2 to try and find an edition for full details anyway.
+          debugLog.push(`Strategy 1: Found ISBNs directly in a Work (uncommon, will still check editions).`);
           console.log(`[OL-DETAIL] Direct fetch successful for ${olid}, found ISBNs in Work.`);
       } else {
+          // No ISBNs found directly or not a recognized type to fully process here, continue to Strategy 2.
           debugLog.push(`Strategy 1: Direct fetch successful for ${olid}, but no ISBNs found directly or not an edition.`);
           console.log(`[OL-DETAIL] Direct fetch successful for ${olid}, but no ISBNs found directly or not an edition.`);
       }
@@ -153,8 +124,8 @@ router.get('/olid-details/:olid', async (req, res) => {
         console.error(`[OL-DETAIL] Direct OLID fetch failed for ${olid}:`, directError.message);
     }
 
-    // Strategy 2: If it's a Work ID and we still don't have ISBNs, try to find an edition with ISBNs
-    if (olid.startsWith('/works/') && finalIsbns.length === 0) {
+    // Strategy 2: If it's a Work ID, and we still don't have good comprehensive data (or ISBNs)
+    if (olid.startsWith('/works/') && (finalIsbns.length === 0 || !comprehensiveBookData?.publishers)) { // Added check for publishers as a proxy for comprehensive data
       debugLog.push(`Strategy 2: Attempting editions fetch for work ${olid}.`);
       console.log(`[OL-DETAIL] Starting editions fetch for ${olid}`);
       try {
@@ -163,6 +134,7 @@ router.get('/olid-details/:olid', async (req, res) => {
 
         if (editionsResponse.data && editionsResponse.data.entries && editionsResponse.data.entries.length > 0) {
           let bestEditionKey = null;
+          // Loop through editions to find one with ISBNs, prioritizing more common types if needed
           for (const edition of editionsResponse.data.entries) {
             const editionIsbns = extractIsbns(edition);
             if (editionIsbns.length > 0) {
@@ -174,8 +146,10 @@ router.get('/olid-details/:olid', async (req, res) => {
             }
           }
 
-          // NEW: Make a direct call to this best edition to get its full details (if not already done via direct fetch)
-          if (bestEditionKey && (comprehensiveBookData?.key !== bestEditionKey || !comprehensiveBookData?.publishers)) { // Check if we already have this specific edition's data (key, or publishers as a proxy for comprehensive)
+          // Crucial NEW Step: Make a direct call to this best edition to get its FULL details
+          // We do this if a bestEditionKey was found AND current `comprehensiveBookData` isn't from this specific edition
+          // (or doesn't have publishers, indicating it's not comprehensive enough)
+          if (bestEditionKey && (comprehensiveBookData?.key !== bestEditionKey || !comprehensiveBookData?.publishers)) {
               debugLog.push(`Strategy 2.1: Fetching full details for best edition ${bestEditionKey}.`);
               console.log(`[OL-DETAIL] Fetching full edition details for ${bestEditionKey}`);
               try {
@@ -210,9 +184,9 @@ router.get('/olid-details/:olid', async (req, res) => {
         const responseData = {
             olid: olid, // Original Work/Edition ID
             title: comprehensiveBookData.title || 'N/A', // Default to N/A if missing
-            author: comprehensiveBookData.author_name || comprehensiveBookData.authors?.map(a => a.name).join(', ') || 'N/A', // Handle both array and string authors
+            author: comprehensiveBookData.author_name || comprehensiveBookData.authors?.map(a => a.name).join(', ') || 'N/A', // Author can be name string or array of objects
             publish_year: comprehensiveBookData.first_publish_year || comprehensiveBookData.publish_date?.substring(0,4) || 'N/A',
-            cover_i: comprehensiveBookData.covers?.[0] || comprehensiveBookData.cover_i || comprehensiveBookData.id_goodreads?.[0] || null, // Best cover ID
+            cover_i: comprehensiveBookData.covers?.[0] || comprehensiveBookData.cover_i || comprehensiveBookData.id_goodreads?.[0] || null, // Best cover ID (Added id_goodreads as fallback)
             description: comprehensiveBookData.description?.value || comprehensiveBookData.description || 'No description available.', // Description can be object or string
             isbns: finalIsbns, // The combined and unique ISBNs found
 
