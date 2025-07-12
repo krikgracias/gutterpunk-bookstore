@@ -9,12 +9,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Elements specific to index.html
   const bookContainer = document.getElementById('book-container');
   const coffeeOfWeekElement = document.getElementById('coffee-of-week');
-  const dailySpecialsList = document.getElementById('daily-specials-list');
+  const daily SpecialsList = document.getElementById('daily-specials-list');
 
   // Elements specific to search-results.html
   const searchResultsContainer = document.getElementById('searchResultsContainer'); // ID on search-results.html
   const searchResultsHeading = document.getElementById('searchResultsHeading');
   const searchQueryDisplay = document.getElementById('searchQueryDisplay');
+  const prevPageBtn = document.getElementById('prevPageBtn'); // Pagination control
+  const nextPageBtn = document.getElementById('nextPageBtn'); // Pagination control
+  const pageInfoSpan = document.getElementById('pageInfo'); // Pagination info
 
   // Elements specific to book-detail.html (ensure IDs match book-detail.html)
   const bookDetailContainer = document.getElementById('bookDetailContainer');
@@ -31,6 +34,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const bookDetailSubjects = document.getElementById('bookDetailSubjects');
   const addInventoryDetailBtn = document.getElementById('addInventoryDetailBtn'); // Button on detail page
 
+
+  // --- Global State for Pagination ---
+  let currentPage = 1;
+  const itemsPerPage = 10; // Fixed number of results per page for frontend logic
+  let currentSearchQuery = ''; // Store the current search query
 
   // --- API Base URL ---
   const API_BASE_URL = 'https://gutterpunk-api.onrender.com'; // Your Render API URL
@@ -57,14 +65,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- Core Search Logic Function ---
   // This function performs the backend search API call and returns the processed data.
-  // It does NOT handle displaying results directly anymore, only fetching.
-  async function fetchSearchResults(query) {
+  async function fetchSearchResults(query, page = 1, limit = itemsPerPage) { // Uses itemsPerPage
     try {
-      const res = await fetch(`${API_BASE_URL}/api/openlibrary/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`${API_BASE_URL}/api/openlibrary/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      return await res.json();
+      return await res.json(); // This returns docs, numFound, currentPage, totalPages
     } catch (err) {
       console.error('Failed to fetch search results from backend:', err);
       throw new Error(`Failed to perform search: ${err.message || 'Network error.'}`);
@@ -72,8 +79,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- Search Results Display Function ---
-  // This function takes processed book data and renders it onto the search results page.
-  async function displaySearchResults(books) {
+  async function displaySearchResults(searchData) { // Expects full searchData object (with docs, numFound, etc.)
+    const books = searchData.docs;
+    const numFound = searchData.numFound;
+    const totalPages = searchData.totalPages;
+    currentPage = searchData.currentPage; // Update global currentPage from backend response
+
     if (!searchResultsContainer) return; // Only run if on search results page
 
     searchResultsContainer.innerHTML = ''; // Clear loading message
@@ -82,24 +93,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       searchResultsContainer.innerHTML = '<h2>Search Results from Open Library</h2>';
       const fragment = document.createDocumentFragment();
 
-      books.forEach(book => {
+      books.forEach(book => { // 'book' here is the processedDoc from your backend's /search
         const card = document.createElement('div');
         card.className = 'book-card';
         const coverUrl = book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : 'https://via.placeholder.com/200x300/f0f0f0/888?text=No+Cover';
         const olid = book.key;
 
-        // --- ISBN Selection and Display for Card ---
+        // --- ISBN Selection and Display ---
         const allFoundIsbns = book.isbns || [];
         const isbn13 = allFoundIsbns.find(isbn => isbn.length === 13) || 'N/A';
         const isbn10 = allFoundIsbns.find(isbn => isbn.length === 10) || 'N/A';
         const genericIsbn = allFoundIsbns.length > 0 ? allFoundIsbns[0] : 'N/A';
+
 
         // --- Format other details for card display ---
         const authorDisplay = book.author_name ? book.author_name.join(', ') : 'Unknown Author';
         const publisherDisplay = book.publishers && book.publishers.length > 0 ? book.publishers[0] : 'N/A';
         const pagesDisplay = book.number_of_pages || 'N/A';
         const formatDisplay = book.physical_format || 'N/A';
-        const languageDisplay = book.languages && book.languages.length > 0 ? book.languages[0] : 'N/A';
+        const languageDisplay = book.languages && book.languages.length > 0 ? book.languages[0] : 'N/A'; // Show first language if multiple
 
         card.innerHTML = `
           <img src="${coverUrl}" alt="${book.title}" class="book-cover-clickable" data-olid="${olid}" />
@@ -134,6 +146,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       searchResultsContainer.innerHTML = '<h2>Search Results from Open Library</h2><p>No results found. Try a different search term.</p>';
     }
+
+    // NEW: Update pagination controls visibility and text
+    if (pageInfoSpan && prevPageBtn && nextPageBtn) {
+        pageInfoSpan.textContent = `Page ${currentPage} of ${totalPages} (Total: ${numFound})`;
+        prevPageBtn.disabled = currentPage <= 1;
+        nextPageBtn.disabled = currentPage >= totalPages;
+    }
   }
 
 
@@ -143,9 +162,27 @@ document.addEventListener('DOMContentLoaded', async () => {
           event.preventDefault(); // Prevent page reload
           const query = searchInput.value.trim();
           if (query) {
-              window.location.href = `/search-results.html?q=${encodeURIComponent(query)}`;
+              // When initiating a search, always go to page 1
+              window.location.href = `/search-results.html?q=${encodeURIComponent(query)}&page=1`; // Start on page 1
           } else {
               alert('Please enter a search term.');
+          }
+      });
+  }
+
+  // --- Pagination Event Listeners ---
+  if (prevPageBtn && nextPageBtn) {
+      prevPageBtn.addEventListener('click', () => {
+          if (currentPage > 1 && currentSearchQuery) {
+              window.location.href = `/search-results.html?q=${encodeURIComponent(currentSearchQuery)}&page=${currentPage - 1}`;
+          }
+      });
+
+      nextPageBtn.addEventListener('click', () => {
+          // Check if next page is available based on totalPages
+          // This relies on displaySearchResults having correctly updated the disabled state
+          if (!nextPageBtn.disabled && currentSearchQuery) { //
+              window.location.href = `/search-results.html?q=${encodeURIComponent(currentSearchQuery)}&page=${currentPage + 1}`;
           }
       });
   }
@@ -154,25 +191,41 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Logic specific to search-results.html (runs ONLY on that page) ---
   if (window.location.pathname === '/search-results.html' && searchResultsContainer) {
       const urlParams = new URLSearchParams(window.location.search);
-      const query = urlParams.get('q');
-      if (searchInput) searchInput.value = query; // Populate search input on results page
-      if (searchResultsHeading) searchResultsHeading.textContent = `Search Results for "${query || ''}"`; // Update heading
+      currentSearchQuery = urlParams.get('q'); // Store for pagination
+      currentPage = parseInt(urlParams.get('page')) || 1; // Get page from URL, default 1
 
-      if (query) {
+      if (searchInput) searchInput.value = currentSearchQuery || ''; // Populate search input on results page
+      if (searchResultsHeading) searchResultsHeading.textContent = `Search Results for "${currentSearchQuery || ''}"`; // Update heading
+
+      if (currentSearchQuery) {
+          searchResultsContainer.innerHTML = '<h2>Searching Open Library...</h2><p>Loading current page...</p>';
+          // Make sure pagination buttons are temporarily disabled while loading
+          if (prevPageBtn) prevPageBtn.disabled = true;
+          if (nextPageBtn) nextPageBtn.disabled = true;
+          if (pageInfoSpan) pageInfoSpan.textContent = 'Loading...';
+
           try {
-              const data = await fetchSearchResults(query); // Call the fetcher
-              await displaySearchResults(data.docs); // Display the docs
+              // Pass pagination params to the fetcher
+              const data = await fetchSearchResults(currentSearchQuery, currentPage, itemsPerPage); // Uses itemsPerPage
+              await displaySearchResults(data); // Pass full search data object for pagination controls
           } catch (err) {
               console.error('Error in search results page:', err);
               searchResultsContainer.innerHTML = `<h2>Search Results</h2><p>${err.message || 'Failed to load search results.'}</p>`;
+              // Disable pagination if error
+              if (pageInfoSpan) pageInfoSpan.textContent = 'Error loading results.';
+              if (prevPageBtn) prevPageBtn.disabled = true;
+              if (nextPageBtn) nextPageBtn.disabled = true;
           }
       } else {
           searchResultsContainer.innerHTML = '<h2>Search Results</h2><p>Please enter a search term to find books.</p>';
+          if (pageInfoSpan) pageInfoSpan.textContent = '';
+          if (prevPageBtn) prevPageBtn.disabled = true;
+          if (nextPageBtn) nextPageBtn.disabled = true;
       }
   }
 
 
-  // --- Logic specific to book-detail.html (NEW: to display single book details) ---
+  // --- Logic specific to book-detail.html (to display single book details) ---
   if (window.location.pathname === '/book-detail.html' && bookDetailContainer) {
       const urlParams = new URLSearchParams(window.location.search);
       const olid = urlParams.get('olid');
@@ -184,7 +237,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       bookDetailContainer.innerHTML = '<p>Loading book details...</p>';
       try {
           // Fetch from YOUR backend proxy's detail endpoint
-          // Note: Using /olid-details based on previous backend change
+          // Note: Using /olid-details as per backend's new endpoint
           const res = await fetch(`${API_BASE_URL}/api/openlibrary/olid-details${olid}`);
           if (!res.ok) {
               const errorResponse = await res.json();
@@ -220,9 +273,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (bookDetailSubjects) bookDetailSubjects.innerHTML = `<strong>Subjects:</strong> ${book.subjects && book.subjects.length > 0 ? book.subjects.join(', ') : 'N/A'}`;
 
 
-          bookDetailContainer.innerHTML = ''; // Clear loading message
-          // Append the dynamically created elements or ensure the HTML structure of book-detail.html is updated for these IDs
-          // For now, we're just setting textContent to existing elements.
+          // Clear loading message and update overall container (if needed)
+          bookDetailContainer.innerHTML = ''; // This clears all the previous loading text
 
           // Show/Hide Add to Inventory button on detail page based on admin status
           const token = localStorage.getItem('userToken');
@@ -299,10 +351,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
           // At this point, the book details are loaded and assigned to HTML elements
           // We can remove the initial loading message from the container
-          bookDetailContainer.innerHTML = '';
-          // If you want to dynamically build the entire detail card here, you would do it now
-          // and append it to bookDetailContainer.
-          // For current HTML structure, just setting textContent is fine.
+          // bookDetailContainer.innerHTML = ''; // Already called, can be removed if specific element updates are enough
 
       } catch (err) {
           console.error('Error fetching book details:', err);
