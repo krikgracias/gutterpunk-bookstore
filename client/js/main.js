@@ -9,15 +9,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Elements specific to index.html
   const bookContainer = document.getElementById('book-container');
   const coffeeOfWeekElement = document.getElementById('coffee-of-week');
-  const daily SpecialsList = document.getElementById('daily-specials-list');
+  const dailySpecialsList = document.getElementById('daily-specials-list');
 
   // Elements specific to search-results.html
   const searchResultsContainer = document.getElementById('searchResultsContainer'); // ID on search-results.html
   const searchResultsHeading = document.getElementById('searchResultsHeading');
   const searchQueryDisplay = document.getElementById('searchQueryDisplay');
-  const prevPageBtn = document.getElementById('prevPageBtn'); // Pagination control
-  const nextPageBtn = document.getElementById('nextPageBtn'); // Pagination control
-  const pageInfoSpan = document.getElementById('pageInfo'); // Pagination info
 
   // Elements specific to book-detail.html (ensure IDs match book-detail.html)
   const bookDetailContainer = document.getElementById('bookDetailContainer');
@@ -32,7 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const bookDetailLanguage = document.getElementById('bookDetailLanguage');
   const bookDetailDescription = document.getElementById('bookDetailDescription');
   const bookDetailSubjects = document.getElementById('bookDetailSubjects');
-  const addInventoryDetailBtn = document.getElementById('addInventoryDetailBtn'); // Button on detail page
+  const addInventoryDetailBtn = document.getElementById('addInventoryDetailBtn'); // Fix: Add = null
 
 
   // --- Global State for Pagination ---
@@ -65,7 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- Core Search Logic Function ---
   // This function performs the backend search API call and returns the processed data.
-  async function fetchSearchResults(query, page = 1, limit = itemsPerPage) { // Uses itemsPerPage
+  async function fetchSearchResults(query, page = 1, limit = itemsPerPage) {
     try {
       const res = await fetch(`${API_BASE_URL}/api/openlibrary/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
       if (!res.ok) {
@@ -79,6 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- Search Results Display Function ---
+  // This function takes processed book data and renders it onto the search results page.
   async function displaySearchResults(searchData) { // Expects full searchData object (with docs, numFound, etc.)
     const books = searchData.docs;
     const numFound = searchData.numFound;
@@ -194,8 +192,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentSearchQuery = urlParams.get('q'); // Store for pagination
       currentPage = parseInt(urlParams.get('page')) || 1; // Get page from URL, default 1
 
-      if (searchInput) searchInput.value = currentSearchQuery || ''; // Populate search input on results page
-      if (searchResultsHeading) searchResultsHeading.textContent = `Search Results for "${currentSearchQuery || ''}"`; // Update heading
+      if (searchInput) searchInput.value = currentSearchQuery || '';
+      if (searchResultsHeading) searchResultsHeading.textContent = `Search Results for "${currentSearchQuery || ''}"`;
 
       if (currentSearchQuery) {
           searchResultsContainer.innerHTML = '<h2>Searching Open Library...</h2><p>Loading current page...</p>';
