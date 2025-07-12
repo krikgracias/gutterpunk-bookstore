@@ -43,10 +43,14 @@ function extractIsbns(detailData) {
     return [...new Set(isbns)].filter(Boolean); // Get unique, non-empty ISBNs
 }
 
-// UPDATED ROUTE: GET /api/openlibrary/search?q=<query>
+// UPDATED ROUTE: GET /api/openlibrary/search?q=<query>&page=<page_num>&limit=<items_per_page>
 // This route now primarily provides basic search results. Full details will be fetched by /olid-details/:olid.
 router.get('/search', async (req, res) => {
   const { q } = req.query;
+  // NEW: Pagination parameters
+  const page = parseInt(req.query.page) || 1; // Default to page 1
+  const limit = parseInt(req.query.limit) || 10; // Default to 10 items per page
+
   if (!q) {
     return res.status(400).json({ message: 'Search query (q) is required.' });
   }
@@ -55,7 +59,8 @@ router.get('/search', async (req, res) => {
     // We are simplifying this search to focus on core work/edition fields for initial display.
     // Full details will come from the /olid-details/:olid endpoint.
     const fields = 'key,title,author_name,first_publish_year,cover_i,isbn'; // Simplified fields for basic search display
-    const openLibraryApiUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&fields=${fields}&limit=50`;
+    // NEW: Add page and limit parameters to Open Library API URL
+    const openLibraryApiUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&fields=${fields}&limit=${limit}&page=${page}`;
     const response = await axios.get(openLibraryApiUrl, { timeout: 8000 });
 
     if (response.data && response.data.docs) {
@@ -69,7 +74,14 @@ router.get('/search', async (req, res) => {
           isbns: extractIsbns(doc) // Extract ISBNs if any directly present on search result doc
         };
       });
-      res.json({ docs: processedDocs, numFound: response.data.numFound });
+      // NEW: Return total number of found documents for pagination calculation on frontend
+      res.json({
+          docs: processedDocs,
+          numFound: response.data.numFound,
+          currentPage: page,
+          limit: limit,
+          totalPages: Math.ceil(response.data.numFound / limit) // Calculate total pages
+      });
     } else {
       res.status(404).json({ message: 'No results found from Open Library.' });
     }
@@ -105,7 +117,7 @@ router.get('/olid-details/:olid', async (req, res) => {
       comprehensiveBookData = directResponse.data; // Store initial data
       finalIsbns = extractIsbns(comprehensiveBookData); // Extract ISBNs from initial fetch
 
-      if (finalIsbns.length > 0 && comprehensiveBookData.type?.key === '/type/edition') {
+      if (finalIsbns.length > 0 && comprehensiveBookData.type?.key === '/type/edition') { // Check if it's an edition
           // If we found ISBNs directly AND it's an Edition, this is likely our best data. Early exit is fine.
           debugLog.push(`Strategy 1: Found ISBNs directly in an Edition.`);
           console.log(`[OL-DETAIL] Direct fetch successful for ${olid}, found ISBNs in Edition.`);
