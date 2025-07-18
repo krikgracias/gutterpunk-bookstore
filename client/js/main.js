@@ -6,12 +6,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const searchForm = document.getElementById('searchForm'); // The form in the header
   const cartCountElement = document.getElementById('cart-count'); // Cart count in header
 
-  // Elements specific to index.html
+  // Elements specific to index.html (These are retrieved only if on index.html)
   const bookContainer = document.getElementById('book-container');
   const coffeeOfWeekElement = document.getElementById('coffee-of-week');
   const dailySpecialsList = document.getElementById('daily-specials-list');
 
-  // Elements specific to search-results.html (Declared with 'let' to assign conditionally)
+  // Elements specific to search-results.html (Declared with 'let' and assigned conditionally)
   let searchResultsContainer;
   let searchResultsHeading;
   let searchQueryDisplay;
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let nextPageBtn;
   let pageInfoSpan;
 
-  // Elements specific to book-detail.html (Declared with 'let' to assign conditionally)
+  // Elements specific to book-detail.html (Declared with 'let' and assigned conditionally)
   let bookDetailContainer;
   let bookDetailTitle;
   let bookDetailCover;
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let bookDetailLanguage;
   let bookDetailDescription;
   let bookDetailSubjects;
-  let addInventoryDetailBtn;
+  let addInventoryDetailBtn = null; // Corrected: Initialize with null
 
 
   // --- Global State for Pagination ---
@@ -64,26 +64,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- Core Search Logic Function ---
+  // This function performs the backend search API call and returns the processed data.
   async function fetchSearchResults(query, page = 1, limit = itemsPerPage) {
-    console.log(`[MAIN.JS] Calling fetchSearchResults for query: "${query}", page: ${page}, limit: ${limit}`); // LOG
+    console.log(`[MAIN.JS] Calling fetchSearchResults for query: "${query}", page: ${page}, limit: ${limit}`);
     try {
       const res = await fetch(`${API_BASE_URL}/api/openlibrary/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
       if (!res.ok) {
-        console.error(`[MAIN.JS] fetchSearchResults HTTP error: ${res.status}`); // LOG
+        console.error(`[MAIN.JS] fetchSearchResults HTTP error: ${res.status}`);
         throw new Error(`HTTP error! status: ${res.status}`);
       }
       const data = await res.json();
-      console.log(`[MAIN.JS] fetchSearchResults received data:`, data); // LOG
+      console.log(`[MAIN.JS] fetchSearchResults received data:`, data);
       return data; // This returns docs, numFound, currentPage, totalPages
     } catch (err) {
-      console.error('[MAIN.JS] Failed to fetch search results from backend:', err); // LOG
+      console.error('[MAIN.JS] Failed to fetch search results from backend:', err);
       throw new Error(`Failed to perform search: ${err.message || 'Network error.'}`);
     }
   }
 
   // --- Search Results Display Function ---
   async function displaySearchResults(searchData) { // Expects full searchData object (with docs, numFound, etc.)
-    console.log(`[MAIN.JS] displaySearchResults called with:`, searchData); // LOG
+    console.log(`[MAIN.JS] displaySearchResults called with:`, searchData);
     const books = searchData.docs;
     const numFound = searchData.numFound;
     const totalPages = searchData.totalPages;
@@ -154,7 +155,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Update pagination controls visibility and text
-    // Assign these elements conditionally here or pass them as parameters if they're not global
     const localPageInfoSpan = document.getElementById('pageInfo');
     const localPrevPageBtn = document.getElementById('prevPageBtn');
     const localNextPageBtn = document.getElementById('nextPageBtn');
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           event.preventDefault(); // Prevent page reload
           const query = searchInput.value.trim();
           if (query) {
-              console.log(`[MAIN.JS] Search form submitted: "${query}"`); // LOG
+              console.log(`[MAIN.JS] Search form submitted: "${query}"`);
               window.location.href = `/search-results.html?q=${encodeURIComponent(query)}&page=1`; // Start on page 1
           } else {
               alert('Please enter a search term.');
@@ -182,22 +182,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- Pagination Event Listeners (Attached conditionally) ---
-  // Assign these elements conditionally here or pass them as parameters if they're not global
   if (window.location.pathname === '/search-results.html') {
       prevPageBtn = document.getElementById('prevPageBtn');
       nextPageBtn = document.getElementById('nextPageBtn');
-      pageInfoSpan = document.getElementById('pageInfo'); // Re-assign within this scope for listeners
+      pageInfoSpan = document.getElementById('pageInfo');
 
-      if (prevPageBtn && nextPageBtn) { // Check if buttons exist
+      if (prevPageBtn && nextPageBtn) {
           prevPageBtn.addEventListener('click', () => {
-              console.log(`[MAIN.JS] Previous page button clicked. Current page: ${currentPage}`); // LOG
+              console.log(`[MAIN.JS] Previous page button clicked. Current page: ${currentPage}`);
               if (currentPage > 1 && currentSearchQuery) {
                   window.location.href = `/search-results.html?q=${encodeURIComponent(currentSearchQuery)}&page=${currentPage - 1}`;
               }
           });
 
           nextPageBtn.addEventListener('click', () => {
-              console.log(`[MAIN.JS] Next page button clicked. Current page: ${currentPage}`); // LOG
+              console.log(`[MAIN.JS] Next page button clicked. Current page: ${currentPage}`);
               if (!nextPageBtn.disabled && currentSearchQuery) {
                   window.location.href = `/search-results.html?q=${encodeURIComponent(currentSearchQuery)}&page=${currentPage + 1}`;
               }
@@ -222,7 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (searchResultsHeading) searchResultsHeading.textContent = `Search Results for "${currentSearchQuery || ''}"`;
 
       if (currentSearchQuery) {
-          console.log(`[MAIN.JS] Initializing search for results page: "${currentSearchQuery}", page ${currentPage}`); // LOG
+          console.log(`[MAIN.JS] Initializing search for results page: "${currentSearchQuery}", page ${currentPage}`);
           searchResultsContainer.innerHTML = '<h2>Searching Open Library...</h2><p>Loading current page...</p>';
           // Make sure pagination buttons are temporarily disabled while loading
           if (prevPageBtn) prevPageBtn.disabled = true;
@@ -232,16 +231,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           try {
               const data = await fetchSearchResults(currentSearchQuery, currentPage, itemsPerPage);
               await displaySearchResults(data);
-              console.log(`[MAIN.JS] Search results displayed successfully.`); // LOG
+              console.log(`[MAIN.JS] Search results displayed successfully.`);
           } catch (err) {
-              console.error('[MAIN.JS] Error in search results page catch block:', err); // LOG
+              console.error('[MAIN.JS] Error in search results page catch block:', err);
               searchResultsContainer.innerHTML = `<h2>Search Results</h2><p>${err.message || 'Failed to load search results.'}</p>`;
               if (pageInfoSpan) pageInfoSpan.textContent = 'Error loading results.';
               if (prevPageBtn) prevPageBtn.disabled = true;
               if (nextPageBtn) nextPageBtn.disabled = true;
           }
       } else {
-          console.log(`[MAIN.JS] No query found on search results page URL.`); // LOG
+          console.log(`[MAIN.JS] No query found on search results page URL.`);
           searchResultsContainer.innerHTML = '<h2>Search Results</h2><p>Please enter a search term to find books.</p>';
           if (pageInfoSpan) pageInfoSpan.textContent = '';
           if (prevPageBtn) prevPageBtn.disabled = true;
@@ -277,15 +276,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (bookDetailContainer) bookDetailContainer.innerHTML = '<p>Loading book details...</p>';
       try {
-          console.log(`[MAIN.JS] Fetching book details for OLID: ${olid}`); // LOG
+          console.log(`[MAIN.JS] Fetching book details for OLID: ${olid}`);
           const res = await fetch(`${API_BASE_URL}/api/openlibrary/olid-details${olid}`);
           if (!res.ok) {
               const errorResponse = await res.json();
-              console.error(`[MAIN.JS] Book detail fetch HTTP error: ${res.status}`, errorResponse); // LOG
+              console.error(`[MAIN.JS] Book detail fetch HTTP error: ${res.status}`, errorResponse);
               throw new Error(errorResponse.message || `HTTP error! status: ${res.status}`);
           }
           const book = await res.json();
-          console.log(`[MAIN.JS] Book detail data received:`, book); // LOG
+          console.log(`[MAIN.JS] Book detail data received:`, book);
 
           // Populate the book detail page elements
           if (bookDetailTitle) bookDetailTitle.textContent = book.title || 'Unknown Title';
@@ -315,7 +314,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (bookDetailSubjects) bookDetailSubjects.innerHTML = `<strong>Subjects:</strong> ${book.subjects && book.subjects.length > 0 ? book.subjects.join(', ') : 'N/A'}`;
 
 
-          if (bookDetailContainer) bookDetailContainer.innerHTML = ''; // Clear loading message from container
+          // Clear loading message and update overall container (if needed)
+          if (bookDetailContainer) bookDetailContainer.innerHTML = ''; // This clears all the previous loading text
 
           // Show/Hide Add to Inventory button on detail page based on admin status
           const token = localStorage.getItem('userToken');
@@ -389,10 +389,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                   addInventoryDetailBtn.style.display = 'none';
               }
           }
-
-          // At this point, the book details are loaded and assigned to HTML elements
-          // We can remove the initial loading message from the container
-          // bookDetailContainer.innerHTML = ''; // Already called, can be removed if specific element updates are enough
 
       } catch (err) {
           console.error('Error fetching book details:', err);
