@@ -1,9 +1,9 @@
-// server/routes/openLibrary.js (Complete and Final Copy-Paste)
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
 // Helper function to extract and normalize ISBNs from various Open Library detail objects
+// This now specifically looks for the 'identifiers' object as per API docs
 function extractIsbns(detailData) {
     let isbns = [];
     const identifiers = detailData.identifiers; // Access the identifiers object
@@ -57,6 +57,7 @@ router.get('/search', async (req, res) => {
 
   try {
     // CRITICAL CHANGE: Request ALL necessary edition fields directly in the initial search
+    // This is the comprehensive list of fields for the search API
     const fields = 'key,title,author_name,first_publish_year,cover_i,isbn,editions.key,editions.title,editions.isbn,editions.publishers,editions.publish_date,editions.number_of_pages,editions.physical_format,editions.languages,editions.description,editions.lccn,editions.oclc,subjects'; // Ensure all these fields are requested
     const openLibraryApiUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&fields=${fields}&limit=${limit}&page=${page}`; // Use limit and page for pagination
     const response = await axios.get(openLibraryApiUrl, { timeout: 10000 });
@@ -69,7 +70,7 @@ router.get('/search', async (req, res) => {
         // Try to find the best edition within the search result that has an ISBN
         if (doc.editions && doc.editions.docs && doc.editions.docs.length > 0) {
           for (const edition of doc.editions.docs) {
-            const editionIsbns = extractIsbns(edition);
+            const editionIsbns = extractIsbns(edition); // Use updated helper for edition
             if (editionIsbns.length > 0) {
               bestEditionData = edition; // This is the edition we'll use for full details
               combinedIsbns = editionIsbns;
@@ -98,7 +99,7 @@ router.get('/search', async (req, res) => {
           physical_format: bestEditionData?.physical_format || null,
           languages: bestEditionData?.languages?.map(l => l.key.split('/').pop()) || [], // Extract language codes
           publish_places: bestEditionData?.publish_places?.map(p => p.name) || [],
-          description: bestEditionData?.description?.value || bestEditionData?.description || doc.description?.value || doc.description || null, // Description can be object or string
+          description: bestEditionData?.description?.value || bestEditionData?.description || doc.description?.value || doc.description || null, // Description from edition or work
           subjects: bestEditionData?.subjects?.map(s => s.name) || doc.subjects?.map(s => s.name) || [], // Subjects from edition or work
         };
       });
