@@ -6,6 +6,39 @@
   <title>Search Results - GutterPunk Books & Co.</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+      /* Add basic pagination styles */
+      .pagination-controls {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 15px;
+          margin-top: 2em;
+          padding-bottom: 2em;
+      }
+      .pagination-controls button {
+          background: #f0c040;
+          color: #222;
+          border: none;
+          padding: 10px 15px;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 1em;
+          transition: background 0.3s ease;
+      }
+      .pagination-controls button:hover:not(:disabled) {
+          background: #e0b030;
+      }
+      .pagination-controls button:disabled {
+          background: #ccc;
+          cursor: not-allowed;
+      }
+      .pagination-controls span {
+          font-size: 1.1em;
+          font-weight: bold;
+          color: #333;
+      }
+  </style>
 </head>
 <body>
   <header>
@@ -34,6 +67,11 @@
       <p id="searchQueryDisplay"></p>
       <div id="searchResultsContainer" class="books">
         <p>Loading search results...</p>
+      </div>
+      <div class="pagination-controls">
+          <button id="prevPageBtn" disabled>Previous</button>
+          <span id="pageInfo">Page 1 of 1</span>
+          <button id="nextPageBtn" disabled>Next</button>
       </div>
     </section>
   </main>
