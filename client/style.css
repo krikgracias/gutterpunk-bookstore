@@ -16,10 +16,24 @@ header {
   align-items: center; /* Vertically align items */
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
-header h1 {
-  margin: 0;
-  font-size: 1.8em;
+
+/* Logo styling */
+.header-logo-link {
+    display: flex; /* To align image within link */
+    align-items: center; /* Vertically center the logo */
+    height: 100%; /* Take full height of header if desired */
 }
+.header-logo {
+    height: 50px; /* Adjust as needed for your logo's desired height */
+    width: auto; /* Maintain aspect ratio */
+    max-width: 150px; /* Prevent it from getting too wide */
+    margin-right: 20px; /* Spacing between logo and nav */
+}
+/* Hide the h1 if you're using an image logo */
+header h1 {
+    display: none;
+}
+
 
 nav {
     margin-right: auto; /* Push nav to left, search to right of nav */
@@ -52,7 +66,7 @@ nav a:hover {
     font-weight: bold;
 }
 
-/* NEW: Styles for the search form in the header */
+/* Styles for the search form in the header */
 .header-search {
     margin-left: auto; /* Push search to the right */
     padding-left: 20px; /* Spacing */
@@ -244,6 +258,23 @@ nav a:hover {
   background: #e0b030;
 }
 
+/* Specific styles for new fields on book cards */
+.book-card .isbn-general,
+.book-card .isbn13,
+.book-card .isbn10,
+.book-card .publisher,
+.book-card .pages,
+.book-card .format,
+.book-card .language {
+    font-size: 0.85em; /* Slightly smaller text */
+    color: #555; /* A bit darker than general p */
+    margin-bottom: 3px; /* Smaller margin between these details */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
 footer {
   padding: 1.5em 2em;
   background: #222;
@@ -276,10 +307,19 @@ footer {
     .header-search input[type="text"] {
         width: calc(80% - 70px); /* Adjust for smaller screens */
     }
-    header h1 {
-        order: 0; /* Keep logo at top */
+    header h1 { /* If you kept h1 but hid it, ensure it's still hidden */
+        display: none;
+    }
+    .header-logo { /* Adjust logo size for mobile */
+        height: 40px;
+        max-width: 120px;
+        margin: 10px auto;
+    }
+    .header-logo-link {
+        order: 0;
         width: 100%;
-        text-align: center;
+        justify-content: center;
+        margin-bottom: 10px;
     }
     .hero h2 {
         font-size: 2em;
@@ -339,9 +379,6 @@ footer {
     justify-content: center; /* Center book cards */
 }
 
-
-/* Add this to your existing client/style.css */
-
 /* Basic styles for admin dashboard */
 .admin-dashboard-container {
     padding: 3em 2em;
@@ -370,6 +407,185 @@ footer {
     color: #666;
 }
 
-/* Optional: You might want to hide the 'Add to Inventory' button
-   from public search results more definitively, though JS removes it. */
-/* .add-to-inventory-btn { display: none; } */
+/* Basic styles for login/register form */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 150px); /* Adjust based on header/footer height */
+    padding: 2em;
+    background: #f9f9f9;
+}
+.auth-form {
+    background: #fff;
+    padding: 2em;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+.auth-form h2 {
+    margin-top: 0;
+    color: #333;
+    font-size: 1.8em;
+    margin-bottom: 1em;
+}
+.auth-form label {
+    display: block;
+    text-align: left;
+    margin-bottom: 0.5em;
+    font-weight: bold;
+    color: #555;
+}
+.auth-form input[type="text"],
+.auth-form input[type="email"],
+.auth-form input[type="password"] {
+    width: calc(100% - 22px); /* Account for padding and border */
+    padding: 10px;
+    margin-bottom: 1.5em;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1em;
+}
+.auth-form button {
+    background: #222;
+    color: white;
+    border: none;
+    padding: 0.8em 2em;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: background 0.3s ease;
+}
+.auth-form button:hover {
+    background: #444;
+}
+.auth-form p {
+    margin-top: 1.5em;
+    font-size: 0.9em;
+}
+.auth-form p a {
+    color: #f0c040;
+    text-decoration: none;
+    font-weight: bold;
+}
+.auth-form p a:hover {
+    text-decoration: underline;
+}
+.error-message {
+    color: #d9534f; /* Red */
+    margin-bottom: 1em;
+    font-weight: bold;
+}
+.success-message {
+    color: #5cb85c; /* Green */
+    margin-bottom: 1em;
+    font-weight: bold;
+}
+
+/* Specific styles for the book detail page */
+.book-detail-main {
+    padding: 3em 2em;
+    background: #f9f9f9;
+    min-height: calc(100vh - 150px);
+}
+.book-detail-card {
+    background: #fff;
+    padding: 2em;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping of content */
+    gap: 2em;
+}
+.book-detail-cover-area {
+    flex: 0 0 250px; /* Fixed width for cover */
+    text-align: center;
+}
+.book-detail-cover-area img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.book-detail-info {
+    flex: 1; /* Take remaining space */
+    min-width: 300px; /* Ensure it doesn't get too small */
+}
+.book-detail-info h2 {
+    margin-top: 0;
+    font-size: 2.2em;
+    color: #222;
+    line-height: 1.2;
+}
+.book-detail-info h3 {
+    font-size: 1.5em;
+    color: #555;
+    margin-top: 0.5em;
+}
+.book-detail-info p {
+    margin-bottom: 0.5em;
+    color: #444;
+}
+.book-detail-info p strong {
+    color: #222;
+}
+.book-detail-description {
+    margin-top: 1.5em;
+    line-height: 1.8;
+    color: #333;
+}
+.book-detail-subjects {
+    margin-top: 1em;
+    font-size: 0.9em;
+    color: #777;
+}
+.add-to-inventory-detail-btn {
+    background: #f0c040;
+    color: #222;
+    border: none;
+    padding: 0.8em 2em;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.1em;
+    margin-top: 1.5em;
+    transition: background 0.3s ease;
+}
+.add-to-inventory-detail-btn:hover {
+    background: #e0b030;
+}
+
+/* Pagination controls style */
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 2em;
+    padding-bottom: 2em;
+}
+.pagination-controls button {
+    background: #f0c040;
+    color: #222;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background 0.3s ease;
+}
+.pagination-controls button:hover:not(:disabled) {
+    background: #e0b030;
+}
+.pagination-controls button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+.pagination-controls span {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #333;
+}
